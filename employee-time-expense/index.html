@@ -117,6 +117,7 @@ input[type=date].empty::before,input[type=time].empty::before{content:attr(data-
 .actions .btn-clear{margin-right:auto;padding:0 8px}
 .actions+.note{margin-top:14px}
 #saveStatus.bad{font-weight:650;color:var(--danger)}
+.print-only{display:none}
 
 @media(max-width:640px){
 .wrap{padding:0 env(safe-area-inset-right) 32px env(safe-area-inset-left)}
@@ -153,14 +154,21 @@ body{background:#fff}
 .section{padding:14px 4px}
 .identity{background:none}
 .item{break-inside:avoid}
+.section>h2{break-after:avoid}
 .sign,.approval{break-inside:avoid}
 input,select,textarea{min-height:40px;border-color:#c9d2de}
 input::placeholder,textarea::placeholder{color:transparent}
 input.empty{color:transparent}
 .badge,.hours,.totals,.check{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .watermarks img{opacity:.05;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.rcpt-img{max-height:150px}
-.thumb img{height:150px}
+.rcpt-img{max-height:90px}
+.thumb img{height:90px}
+.print-only{display:block}
+.attachments{break-before:page}
+.att{margin:0 0 16px;break-inside:avoid}
+.att figcaption{margin:0 0 6px;font-size:13px;font-weight:650;color:var(--ink)}
+.att img{display:block;max-width:100%;max-height:225mm;border:1px solid #c9d2de;border-radius:6px}
+.att p{margin:0;font-size:13px;color:var(--muted)}
 }
 </style>
 </head><body><div class="wrap"><form class="card" id="recordForm" novalidate>
@@ -231,6 +239,8 @@ input.empty{color:transparent}
 <div class="full"><label for="approverNote">Signature / Notes</label><input type="text" id="approverNote" name="approverNote"></div>
 </div>
 </section>
+
+<section class="section attachments print-only" id="attachments" hidden><h2>Attachments</h2><p class="note">Receipts and job photos at full size. Zoom in on the PDF to read the details.</p><div id="attList"></div></section>
 
 <section class="section no-print">
 <div class="actions">
@@ -355,7 +365,7 @@ function addExpense(v){
   d.querySelector('.money').addEventListener('input',()=>{expTotal();rcptStatus(d)});
   d.querySelector('.rcpt').addEventListener('change',e=>{
     const f=e.target.files[0];e.target.value='';if(!f)return;
-    toData(f).then(rc=>{d._rc=rc;rcptStatus(d);sched()});
+    toData(f,1800).then(rc=>{d._rc=rc;rcptStatus(d);sched()});
   });
   twoTap(d.querySelector('.btn-remove'),'Tap again to remove',()=>{d.remove();expTotal();sched()});
   rcptStatus(d);syncEmpty(d);expTotal();
@@ -363,14 +373,14 @@ function addExpense(v){
 $('addExpenseBtn').addEventListener('click',()=>{addExpense();sched()});
 
 /* ---------- photos ---------- */
-function toData(f){return new Promise(res=>{
+function toData(f,max){max=max||1400;return new Promise(res=>{
   const r=new FileReader();
   r.onload=()=>{
     if(!f.type.startsWith('image/'))return res({name:f.name,type:f.type,data:r.result});
     const im=new Image();
     im.onerror=()=>res({name:f.name,type:f.type,data:r.result});
     im.onload=()=>{
-      const k=Math.min(1,1400/Math.max(im.width,im.height)),c=document.createElement('canvas');
+      const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');
       c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
       c.getContext('2d').drawImage(im,0,0,c.width,c.height);
       res({name:f.name,type:'image/jpeg',data:c.toDataURL('image/jpeg',.72)});
@@ -392,8 +402,28 @@ function renderEv(){
 }
 $('evInput').addEventListener('change',e=>{
   const fs=[...e.target.files];e.target.value='';
-  Promise.all(fs.map(toData)).then(r=>{ev=ev.concat(r.filter(x=>isImg(x.data)));renderEv();sched()});
+  Promise.all(fs.map(f=>toData(f))).then(r=>{ev=ev.concat(r.filter(x=>isImg(x.data)));renderEv();sched()});
 });
+
+/* ---------- full-size copies for the PDF ---------- */
+function buildAttachments(){
+  const list=$('attList');list.innerHTML='';
+  const add=(caption,data,name)=>{
+    const f=document.createElement('figure');f.className='att';
+    const c=document.createElement('figcaption');c.textContent=caption;f.appendChild(c);
+    if(isImg(data)){const im=document.createElement('img');im.alt=caption;im.src=data;f.appendChild(im)}
+    else{const p=document.createElement('p');p.textContent='This receipt is a PDF file ('+name+') and can’t be shown here. Send the original file with this record.';f.appendChild(p)}
+    list.appendChild(f);
+  };
+  [...expList.children].forEach((d,i)=>{
+    if(!d._rc)return;
+    const desc=d.querySelector('[name="expDesc[]"]').value.trim(),amt=parseFloat(d.querySelector('.money').value)||0;
+    add('Expense '+(i+1)+' receipt'+(desc?': '+desc:'')+(amt?' (NZ$'+amt.toFixed(2)+')':''),d._rc.data,d._rc.name);
+  });
+  ev.forEach((x,i)=>add('Job evidence photo '+(i+1),x.data,x.name));
+  $('attachments').hidden=!list.children.length;
+}
+window.addEventListener('beforeprint',buildAttachments);
 
 /* ---------- signature ---------- */
 const sigWrap=$('sigWrap'),cv=$('sigPad'),ctx=cv.getContext('2d'),sigImg=$('sigImg');
@@ -537,6 +567,7 @@ $('printBtn').addEventListener('click',()=>{
   if(!form.reportValidity())return;
   if(sigWrap.dataset.state==='signing'){sigMsg('Tap Done to finish signing before you print.',true);sigWrap.scrollIntoView({block:'center'});return}
   if(!sig){sigMsg('Please sign before you print.',true);sigWrap.scrollIntoView({block:'center'});return}
+  buildAttachments();
   window.print();
 });
 $('resetBtn').addEventListener('click',()=>{
