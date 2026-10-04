@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Business System"><meta name="application-name" content="Business System"><meta name="theme-color" content="#ffffff"><link rel="icon" type="image/png" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/icon-180.png"><link rel="manifest" href="manifest.webmanifest"><title>YE Construction Business System v6</title>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Business System"><meta name="application-name" content="Business System"><meta name="theme-color" content="#ffffff"><link rel="icon" type="image/png" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/icon-180.png"><link rel="manifest" href="manifest.webmanifest"><title>YE Construction Business System v7</title>
 <style>
 :root{--blue:#356db7;--deep:#24477f;--orange:#ef7c27;--ink:#172033;--line:#d8dee9;--bg:#edf2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans SC",sans-serif;color:var(--ink);background:var(--bg)}
@@ -31,18 +31,20 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .cost tr.category .screen-only .mini{margin-right:4px;line-height:12px}
 .cost tfoot td{background:#fff;font-weight:700;padding:6px 8px;color:var(--deep);border:1px solid #2d405b}.cost .stline{display:flex;justify-content:space-between;align-items:center;font-size:12px}
 .cost tr.catfoot td{background:#eef4fc;font-weight:700;padding:5px 8px;color:var(--deep)}.cost tr.catfoot .cfl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;margin-right:10px}.cost tr.catfoot .stline{font-size:11px}
+.cl label{display:block;font-weight:700;font-size:13px;color:var(--deep);margin-top:10px}.cl input{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px;font-size:16px;margin-top:4px;background:#fff;color:#111}.cl-row{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}.cl .mini{background:#e4edf9;color:var(--deep);padding:11px 16px;font-size:14px;border-radius:8px;font-weight:700}.cl .cl-pri{background:var(--blue);color:#fff}.cl-info{background:#fff;border:1px solid #d8e0ec;border-radius:8px;padding:12px;white-space:pre-wrap;font-size:14px;margin-top:10px}
 </style>
 </head><body>
 <div class="topbar screen-only"><button type="button" class="tb-btn" onclick="toggleMenu()" id="menuBtn">☰ Menu</button><button type="button" class="tb-btn tb-light" onclick="saveDoc()" id="quickSaveBtn">💾 Save</button><button type="button" class="tb-btn tb-light" onclick="openJobs()" id="listBtn">← Projects</button><span id="topStatus"></span></div>
 <div class="app">
 <aside class="side">
 <img class="side-logo">
-<h1 data-i18n="appTitle">YE Construction Business System</h1><div class="sub">v6 · bilingual · photos · job records</div>
+<h1 data-i18n="appTitle">YE Construction Business System</h1><div class="sub">v7 · bilingual · photos · job records · cloud sync</div>
 <div class="pillrow"><button class="btn light" onclick="setLang('en')">English</button><button class="btn light" onclick="setLang('zh')">中文</button></div>
 <div class="group"><h3 data-i18n="module">Module</h3><select id="docType" onchange="setDocType(this.value)"><option value="quote">QUOTE / 报价</option><option value="invoice">INVOICE / 发票</option><option value="damage">DAMAGE REPORT / 损坏报告</option><option value="insurance">INSURANCE REPORT / 保险报告</option></select></div>
 <button class="btn primary" onclick="newDoc()" data-i18n="newDoc">＋ New Job / Document</button>
 <button class="btn light" onclick="saveDoc()" data-i18n="save">Save Locally</button> <button class="btn light" style="color:#a92d2d;border:1px solid #e3b4b4" onclick="deleteCurrent()" data-i18n="delJob">Delete This Job</button>
 <button class="btn secondary" onclick="openJobs()"><span data-i18n="load">Projects &amp; Report</span><span id="odBadge"></span></button>
+<button class="btn secondary" onclick="clOpen()" id="cldBtn">☁ Cloud Sync</button>
 <button class="btn green" onclick="window.print()" data-i18n="pdf">Print / Save PDF</button>
 <div class="group"><h3 data-i18n="labelTitle">Job Name (list &amp; PDF file name)</h3><select id="labelMode" onchange="labelModeChanged()"><option value="address">Address / 地址</option><option value="client">Client name / 客户名</option><option value="custom">Custom / 自定义</option></select><input id="labelText" placeholder="Job name / 名称" oninput="labelTyped()"></div>
 <div class="group quoteInvoice"><h3 data-i18n="costSettings">Cost Settings</h3><label data-i18n="gstTreatment">GST treatment</label><select id="gstMode" onchange="recalc()"><option value="exclusive">Exclude GST / 未税</option><option value="inclusive">Include GST / 含税</option></select><label>GST %</label><input id="gstRate" type="number" value="15" step="0.01" onchange="recalc()"><label data-i18n="validDays">Validity / Due days</label><input id="validDays" type="number" value="30" onchange="syncDate()"></div>
@@ -109,6 +111,16 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 </div>
 <div class="footer">Building quality, trust, and innovation for a better future.</div>
 </section></main></div>
+<div id="cdg" class="modal screen-only hidden"><div class="modal-box cl" style="max-width:520px;padding-top:18px">
+<div class="modal-head"><b id="clTitle">Cloud Sync</b><span><button class="mini" id="clX">Back</button></span></div>
+<p id="clIntro" style="font-size:13px;color:#475569;line-height:1.5"></p>
+<div id="clIn"><label id="clEl" for="clE">Email</label><input id="clE" type="email" autocomplete="username"><label id="clPl" for="clP">Password</label><input id="clP" type="password" autocomplete="current-password">
+<div class="cl-row"><button class="mini" id="clSu"></button><button class="mini cl-pri" id="clLi"></button></div><p id="clHint" style="font-size:12px;color:#64748b"></p></div>
+<div id="clOn" class="hidden"><div id="clInfo" class="cl-info"></div>
+<div id="clHold" class="hidden"><p id="clHoldT" style="color:#a92d2d;font-size:13px"></p><div class="cl-row"><button class="mini" id="clHr"></button><button class="mini" id="clHd" style="color:#a92d2d"></button></div></div>
+<div class="cl-row"><button class="mini" id="clOut"></button><button class="mini cl-pri" id="clNow"></button></div></div>
+<p id="clMsg" style="color:#a92d2d;font-size:13px;white-space:pre-wrap"></p>
+</div></div>
 <div id="jobsModal" class="modal screen-only hidden"><div class="modal-box"><div class="modal-head"><b data-i18n="jobsTitle">Projects & Report</b><span><button class="mini" onclick="toggleMonthly()" id="monthlyBtn">📊 Monthly</button> <button class="mini" onclick="exportCSV()" data-i18n="csv">Export CSV</button> <button class="mini" onclick="closeJobs()" data-i18n="close">Back</button></span></div><div id="kpis" class="kpis"></div><div id="monthlyBox" class="monthly" style="display:none"><div class="mhead"><b id="monthlyTitle">Monthly collections</b><select id="collectMode" class="stsel" onchange="renderJobs()"><option value="all">All paid</option><option value="invoice">Invoices only</option></select></div><div class="tablewrap"><table class="jobs mtable"><thead><tr><th id="mMonth">Month</th><th id="mCnt">Jobs</th><th class="num" id="mNet">Excl GST</th><th class="num" id="mGst">GST</th><th class="num" id="mTot">Total</th></tr></thead><tbody id="monthlyBody"></tbody></table></div></div><div id="stChips" class="chips"></div><div class="modal-tools"><select id="jobFilter" onchange="renderJobs()"><option value="">All types / 全部类型</option><option value="quote">QUOTE / 报价</option><option value="invoice">INVOICE / 发票</option><option value="damage">DAMAGE / 损坏报告</option><option value="insurance">INSURANCE / 保险报告</option></select><input id="jobSearch" placeholder="Search / 搜索" oninput="renderJobs()"></div><div class="bulk"><label><input type="checkbox" id="selAll" onchange="toggleAllJobs(this.checked)"><span id="selAllTxt">Select all</span></label><span id="selCount"></span><select id="bulkStatus" class="stsel" onchange="this.dataset.v=this.value;renderJobs()"></select><input type="date" id="paidDate" class="stsel" style="display:none" title="Paid date"><button class="mini" id="applySelBtn" onclick="applyStatusSelected()">Apply</button><button class="mini" id="dlSelBtn" onclick="downloadSelected()">Download selected</button><button class="mini warn" id="delSelBtn" onclick="deleteSelected()">Delete selected</button></div><div id="jobSummary" class="job-summary"></div><div class="tablewrap"><table class="jobs"><thead><tr><th class="nosort" style="width:34px"></th><th onclick="sortBy('type')"><span data-i18n="colType">Type</span><span class="arr" data-k="type"></span></th><th onclick="sortBy('status')"><span id="colStatusTxt">Status</span><span class="arr" data-k="status"></span></th><th onclick="sortBy('no')"><span data-i18n="colNo">No.</span><span class="arr" data-k="no"></span></th><th onclick="sortBy('name')"><span data-i18n="colName">Name</span><span class="arr" data-k="name"></span></th><th onclick="sortBy('client')"><span data-i18n="colClient">Client</span><span class="arr" data-k="client"></span></th><th onclick="sortBy('total')"><span data-i18n="colTotal">Total</span><span class="arr" data-k="total"></span></th><th onclick="sortBy('due')"><span data-i18n="colDue">Due</span><span class="arr" data-k="due"></span></th><th onclick="sortBy('updated')"><span data-i18n="colUpdated">Updated</span><span class="arr" data-k="updated"></span></th><th class="nosort"></th></tr></thead><tbody id="jobsBody"></tbody></table></div></div></div>
 
 <script>
@@ -122,7 +134,7 @@ function untouched(id,h){let e=$(id),c=e[h?'innerHTML':'innerText'];return !c.tr
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function money(n){return '$'+Number(n||0).toLocaleString('en-NZ',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtDate(d){return d.toLocaleDateString('en-NZ',{day:'2-digit',month:'2-digit',year:'numeric'})}
-function menuLabels(){if(typeof catSums==='function')catSums();if($('subtotalLabel'))$('subtotalLabel').textContent=lang==='zh'?'小计':'Subtotal';let z=lang==='zh',oc=(typeof overdueCount==='function')?overdueCount():0;$('menuBtn').textContent=(z?'☰ 菜单':'☰ Menu')+(oc?' ⚠'+oc:'');$('quickSaveBtn').textContent=z?'💾 保存':'💾 Save';$('listBtn').textContent=z?'← 项目列表':'← Projects'}
+function menuLabels(){if(typeof catSums==='function')catSums();if($('subtotalLabel'))$('subtotalLabel').textContent=lang==='zh'?'小计':'Subtotal';let z=lang==='zh',oc=(typeof overdueCount==='function')?overdueCount():0;$('menuBtn').textContent=(z?'☰ 菜单':'☰ Menu')+(oc?' ⚠'+oc:'');$('quickSaveBtn').textContent=z?'💾 保存':'💾 Save';$('listBtn').textContent=z?'← 项目列表':'← Projects';clShow()}
 function setLang(x){lang=x;menuLabels();document.documentElement.lang=x==='zh'?'zh-CN':'en';document.querySelectorAll('[data-i18n]').forEach(el=>{let k=el.dataset.i18n;if(T[x][k])el.textContent=T[x][k]});setDocType($('docType').value,false);updateSignatureLabels();updateVariationLabels()}
 function addCategory(data={}){let tr=document.createElement('tr');tr.dataset.type='category';tr.className='category';let no=data.item||String(document.querySelectorAll('#costBody tr.category').length+1);tr.innerHTML=`<td><input class="item" value="${esc(no)}" oninput="renumber()"></td><td><textarea class="desc" rows="1">${esc(data.desc||'Category')}</textarea><span class="screen-only"><button class="mini" onclick="addItemTo(this.closest('tr'))">＋ Item / 子项</button> <button class="mini" onclick="delCategory(this.closest('tr'))">×</button></span></td><td></td><td></td><td></td>`;$('costBody').appendChild(tr);requestAnimationFrame(()=>growDesc(tr.querySelector('.desc')))}
 let lastRowTr=null;document.addEventListener('focusin',e=>{let tr=e.target.closest&&e.target.closest('#costBody tr');if(tr)lastRowTr=tr});
@@ -169,7 +181,7 @@ function getData(){let fields={};['clientName','clientAddress','clientPhone','cl
 function apply(d){if(!d)return;setLang(d.lang||'en');$('docType').value=d.docType||'quote';$('gstMode').value=d.gstMode||'exclusive';$('gstRate').value=d.gstRate||15;$('validDays').value=d.validDays||30;setDocType($('docType').value,false);Object.entries(d.fields||{}).forEach(([k,v])=>{if($(k))$(k).innerHTML=v});Object.entries(d.report||{}).forEach(([k,v])=>{if($(k))$(k).value=v});photos=d.photos||[];variations=d.variations||[];$('labelMode').value=(d.label&&d.label.mode)||'address';$('labelText').value=(d.label&&d.label.text)||'';signatureData=d.signature||'';sigMode=false;sigUI();$('costBody').innerHTML='';(d.rows||[]).forEach(r=>r.type==='category'?addCategory(r):addCostRow(r));renumber();ensureFoots();renderPhotos();renderVariations();recalc();requestAnimationFrame(()=>{restoreSignature();growAll()});autoLabel()}
 const JOBS_KEY='yeJobs';let currentJobId=null,autoT;
 function readJobs(){try{return JSON.parse(localStorage.getItem(JOBS_KEY)||'{}')}catch{return{}}}
-function writeJobs(j){localStorage.setItem(JOBS_KEY,JSON.stringify(j))}
+function writeJobs(j){localStorage.setItem(JOBS_KEY,JSON.stringify(j));clTouch()}
 function plain(h){let e=document.createElement('div');e.innerHTML=h||'';return e.textContent.trim()}
 function calcParts(d){let rate=(parseFloat(d.gstRate)||0)/100,ex=0,inc=0;(d.rows||[]).forEach(r=>{if(r.type!=='cost')return;let q=parseFloat(r.qty)||0,u=parseFloat(r.unit)||0,a=(r.manual===''||r.manual==null)?q*u:(parseFloat(r.manual)||0),m=(!r.rowgst||r.rowgst==='inherit')?d.gstMode:r.rowgst;m==='inclusive'?inc+=a:ex+=a});let gst=ex*rate+(inc-inc/(1+rate));return{net:ex+inc-(inc-inc/(1+rate)),gst,total:ex+ex*rate+inc}}
 function calcTotal(d){return calcParts(d).total}
@@ -229,7 +241,7 @@ function exportJSON(){let blob=new Blob([JSON.stringify(getData())],{type:'appli
 function importJSON(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{apply(JSON.parse(r.result));currentJobId=null;$('status').textContent='Imported'}catch{$('status').textContent='Invalid file'}};r.readAsText(f);e.target.value=''}
 function newDoc(){let z=lang==='zh';if((currentJobId||hasContent())&&!saveDoc()&&!confirm(z?'当前项目保存失败（照片可能过多），继续新建会丢失它，是否继续？':'Could not save the current job (photos too large?). Continue and lose it?'))return;if(confirm(z?'当前项目已保存。新建空白文档？':'Current job is saved. Start a new blank document?'))location.reload()}
 function loadProfile(){try{let p=JSON.parse(localStorage.getItem('yeProfile')||'{}');$('gstNo').innerText=p.gst||'';$('bankAcct').innerText=p.bank||''}catch{}}
-function saveProfile(){try{localStorage.setItem('yeProfile',JSON.stringify({gst:$('gstNo').innerText.trim(),bank:$('bankAcct').innerText.trim()}))}catch{}}
+function saveProfile(){try{localStorage.setItem('yeProfile',JSON.stringify({gst:$('gstNo').innerText.trim(),bank:$('bankAcct').innerText.trim()}));clTouch()}catch{}}
 const PH=['Project Location','Client Address','Client Name','Project Name',''];
 function nonPh(v){v=(v||'').trim();return PH.includes(v)?'':v}
 function labelFromData(d,mode){let f=d.fields||{},rep=d.docType==='damage'||d.docType==='insurance';let addr=rep?((d.report||{}).rAddress||'').trim():(nonPh(plain(f.projectLocation))||nonPh(plain(f.clientAddress)));let cl=nonPh(plain(f.clientName));return mode==='client'?(cl||addr):(addr||cl)}
@@ -240,5 +252,124 @@ function docTitle(){let n=typeNames()[$('docType').value]||'Document',no=plain($
 const baseTitle=document.title;window.addEventListener('beforeprint',()=>{document.title=docTitle()||baseTitle});window.addEventListener('afterprint',()=>{document.title=baseTitle});
 function toggleMenu(){document.querySelector('.app').classList.toggle('menu-closed')}
 function init(){setTimeout(()=>{updateOverdueBadge();let c=overdueCount();if(c)$('status').textContent=(lang==='zh'?'⚠ 有 '+c+' 张逾期发票':'⚠ '+c+' overdue invoice(s)')},300);if(innerWidth<=1100)document.querySelector('.app').classList.add('menu-closed');migrateLegacy();loadProfile();['gstNo','bankAcct'].forEach(id=>$(id).addEventListener('input',saveProfile));document.addEventListener('input',e=>{if(e.target.id!=='labelText')autoLabel();if(!currentJobId)return;clearTimeout(autoT);autoT=setTimeout(saveDoc,2500)});let d=new Date();document.querySelectorAll('.watermarkLogo,.side-logo').forEach(x=>x.src=document.querySelector('.brand-logo').src);$('signatureDate').innerText=fmtDate(d);$('variationApprovalDate').innerText=fmtDate(d);$('docDate').innerText=fmtDate(d);$('rDate').value=fmtDate(d);syncDate();[['1','Site preparation & Excavation'],['2','Foundation & Structural Work'],['3','Electrical'],['4','Plumbing, Drainage, gas fittings'],['5','Interior Fit-Out & Fixtures'],['6','Other']].forEach(x=>addCategory({item:x[0],desc:x[1]}));ensureFoots();setDocType('quote',true);setLang('en');renderPhotos();setupSignature();updateSignatureLabels();updateVariationLabels()}
-init();
+/* ---- Cloud sync (Supabase): one shared company workspace, only listed members can read/write ---- */
+const CL_URL='https://fkyuhthxfzhqmlikbrfg.supabase.co',CL_KEY='sb_publishable_zbPzA78u7V3htYulP1b9_w_53KQFKHn',CL_T='/rest/v1/ye_records';
+let cl={ses:null,st:{who:'',cur:'',sh:{}},busy:false,again:false,timer:null,hold:null,okDel:false,last:0,err:'',member:null},clLastInput=0;
+function L(en,zh){return lang==='zh'?zh:en}
+function clGet(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}
+function clPut(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+function clAll(){let m={},j=readJobs();Object.keys(j).forEach(id=>{if(j[id]&&j[id].data)m['job:'+id]=j[id]});let p=clGet('yeProfile');if(p&&(p.gst||p.bank))m['profile:main']=p;return m}
+function clFp(v){let h=2166136261;const eat=s=>{for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0}};
+  (function w(x){if(x===null||x===undefined){eat('n');return}
+    if(typeof x==='string'){if(x.length>300)eat('S'+x.length+x.slice(0,40)+x.slice(-40));else eat('s'+x.length+':'+x);return}
+    if(typeof x!=='object'){eat(typeof x+String(x));return}
+    if(Array.isArray(x)){eat('[');x.forEach(w);eat(']');return}
+    eat('{');Object.keys(x).sort().forEach(k=>{if(x[k]===undefined)return;eat(k+'=');w(x[k])});eat('}')})(v);
+  return h.toString(36)}
+function clF(k,rec){return clFp(k.indexOf('job:')===0?Object.assign({},rec,{updated:0}):rec)}
+function clScan(){let m=clAll(),sh=cl.st.sh,now=Date.now();
+  for(let k in m){let f=clF(k,m[k]),s=sh[k];
+    let u=m[k].updated||0;
+    if(!s)sh[k]={f,d:1,m:u,u};
+    else if(s.f!==f||s.del){s.f=f;s.d=1;s.m=(u&&u!==s.u)?u:now;s.u=u;delete s.del}}
+  for(let k in sh){if(!m[k]&&!sh[k].del&&k.indexOf('job:')===0){if(sh[k].t){sh[k].del=1;sh[k].d=1;sh[k].m=now}else delete sh[k]}}
+  return m}
+async function clErr(r){let t='';try{let j=await r.json();t=j.msg||j.message||j.error_description||j.error||''}catch{}return new Error((t||'Request failed')+' ('+r.status+')')}
+function clSetSes(j,email){cl.ses={access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000,email:(j.user&&j.user.email)||email||(cl.ses&&cl.ses.email)||''};clPut('yeCloudSes',cl.ses)}
+async function clAuth(kind,email,pw){
+  let r=await fetch(CL_URL+'/auth/v1/'+(kind==='signup'?'signup':'token?grant_type=password'),{method:'POST',headers:{apikey:CL_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
+  if(!r.ok)throw await clErr(r);let j=await r.json();if(!j.access_token)return false;clSetSes(j,email);return true}
+async function clRefresh(force){if(!cl.ses)return;if(!force&&cl.ses.exp-Date.now()>120000)return;
+  let r=await fetch(CL_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:CL_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:cl.ses.refresh_token})});
+  if(!r.ok){if([400,401,403].includes(r.status)){cl.ses=null;clPut('yeCloudSes',null);throw new Error(L('Signed out — please sign in again','登录已过期，请重新登录'))}throw await clErr(r)}
+  clSetSes(await r.json())}
+async function clFetch(path,opt,retried){opt=opt||{};let h={apikey:CL_KEY,Authorization:'Bearer '+cl.ses.access_token};
+  if(opt.body)h['Content-Type']='application/json';if(opt.prefer)h.Prefer=opt.prefer;
+  let r=await fetch(CL_URL+path,{method:opt.method||'GET',headers:h,body:opt.body,cache:'no-store'});
+  if(r.status===401&&!retried){await clRefresh(true);return clFetch(path,opt,true)}return r}
+function clApply(upd,rm){let j=readJobs(),cur=currentJobId,touchCur=false;
+  Object.keys(rm).forEach(k=>{let id=k.slice(4);delete j[id];if(id===cur){currentJobId=null;clearTimeout(autoT)}});
+  Object.keys(upd).forEach(k=>{if(k==='profile:main'){clPut('yeProfile',upd[k]);loadProfile();return}let id=k.slice(4);j[id]=upd[k];if(id===cur)touchCur=true});
+  localStorage.setItem(JOBS_KEY,JSON.stringify(j));
+  if(touchCur&&Date.now()-clLastInput>8000){try{apply(j[cur].data)}catch{}}
+  if(listOpen())renderJobs();updateOverdueBadge()}
+async function clSync(){
+  if(!cl.ses)return;if(cl.busy){cl.again=true;return}
+  cl.busy=true;cl.err='';clShow();let fail=0,failMsg='';
+  try{
+    await clRefresh();
+    if(cl.st.who!==cl.ses.email)cl.st={who:cl.ses.email,cur:'',sh:{}};
+    if(cl.member!==true){let rm=await clFetch('/rest/v1/ye_members?select=email');if(!rm.ok)throw await clErr(rm);cl.member=(await rm.json()).length>0;
+      if(!cl.member)throw new Error(L('This email is not on the allowed list yet. Ask the admin to add it.','这个邮箱还不在允许名单里，请让管理员先把它加进去。'))}
+    let sh=cl.st.sh,local=clScan();
+    let metas=[],off=0;
+    for(;;){let r=await clFetch(CL_T+'?select=kind,id,deleted,updated_at'+(cl.st.cur?'&updated_at=gt.'+encodeURIComponent(cl.st.cur):'')+'&order=updated_at.asc,kind.asc,id.asc&limit=1000&offset='+off);
+      if(!r.ok)throw await clErr(r);let a=await r.json();metas=metas.concat(a);if(a.length<1000)break;off+=1000}
+    let need={},rm={},upd={},maxT=cl.st.cur,changed=false;
+    metas.forEach(x=>{let k=x.kind+':'+x.id,s=sh[k];if(x.updated_at>maxT)maxT=x.updated_at;
+      if(s&&s.t===x.updated_at)return;
+      if(s&&s.d&&s.m>Date.parse(x.updated_at))return;
+      if(x.deleted){if(local[k]){rm[k]=1;changed=true}delete sh[k];return}
+      (need[x.kind]=need[x.kind]||[]).push(x.id)});
+    for(let kind in need){let ids=need[kind];
+      for(let i=0;i<ids.length;i+=5){let q=ids.slice(i,i+5).map(z=>'"'+z+'"').join(',');
+        let r2=await clFetch(CL_T+'?select=kind,id,data,updated_at&deleted=is.false&kind=eq.'+kind+'&id=in.('+encodeURIComponent(q)+')');
+        if(!r2.ok)throw await clErr(r2);
+        (await r2.json()).forEach(x=>{if(!x.data)return;let k=x.kind+':'+x.id;upd[k]=x.data;sh[k]={f:clF(k,x.data),t:x.updated_at,u:x.data.updated||0};changed=true})}}
+    if(changed){try{clApply(upd,rm)}catch(e){throw new Error(L('This device is out of storage space; could not save data from the cloud.','这台设备的存储空间不够，云端的数据存不下来。'))}}
+    let dirty=Object.keys(sh).filter(k=>sh[k].d),dels=dirty.filter(k=>sh[k].del),known=Object.keys(sh).filter(k=>sh[k].t).length;
+    if(dels.length>5&&dels.length>known*0.5&&!cl.okDel){cl.hold=dels;dirty=dirty.filter(k=>!sh[k].del)}else cl.hold=null;
+    cl.okDel=false;
+    let now=clAll(),parts=[],size=0;
+    const flush=async()=>{if(!parts.length)return;let body='['+parts.join(',')+']';parts=[];size=0;
+      let r3=await clFetch(CL_T+'?on_conflict=kind,id&select=kind,id,updated_at',{method:'POST',body,prefer:'resolution=merge-duplicates,return=representation'});
+      if(!r3.ok){fail++;failMsg=(await clErr(r3)).message;return}
+      (await r3.json()).forEach(x=>{let k=x.kind+':'+x.id,s=sh[k];if(!s)return;if(s.del)delete sh[k];else{s.t=x.updated_at;s.d=0;s.m=0}})};
+    for(let k of dirty){let p=k.indexOf(':'),row={kind:k.slice(0,p),id:k.slice(p+1),data:sh[k].del?null:now[k],deleted:!!sh[k].del};
+      if(!row.deleted&&!row.data)continue;
+      let js=JSON.stringify(row);if(parts.length&&(size+js.length>800000||parts.length>=20))await flush();
+      parts.push(js);size+=js.length}
+    await flush();
+    cl.st.cur=maxT;cl.last=Date.now();
+    if(fail)cl.err=L(fail+' batch(es) failed to upload: ','有 '+fail+' 批没传上去：')+failMsg;
+  }catch(e){cl.err=(e instanceof TypeError)?L('Cannot reach the cloud. Changes are kept on this device and will upload when online.','连不上云端。改动已存在本机，联网后会补传。'):e.message}
+  clPut('yeCloudSt',cl.st);cl.busy=false;clShow();
+  if(cl.again){cl.again=false;clTouch()}}
+function clTouch(){if(!cl.ses)return;clearTimeout(cl.timer);cl.timer=setTimeout(clSync,2000)}
+function clTime(t){return new Date(t).toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'})}
+function clShow(){
+  let b=$('cldBtn');if(!b)return;
+  b.textContent=!cl.ses?L('☁ Cloud Sync','☁ 云同步'):cl.busy?L('☁ Syncing…','☁ 同步中…'):cl.err?L('☁ Sync error','☁ 同步出错'):cl.hold?L('☁ Needs confirmation','☁ 需要确认'):cl.last?L('☁ Synced ','☁ 已同步 ')+clTime(cl.last):L('☁ Cloud Sync','☁ 云同步');
+  b.style.outline=(cl.err||cl.hold)?'2px solid #e0a23a':'';
+  $('clTitle').textContent=L('Cloud Sync','云同步');
+  $('clIntro').textContent=L('Sign in on each device (computer, iPad, phone) to share one set of jobs. Only emails on the company list can open the data. Export a backup before the first sign-in.','在每台设备（电脑、iPad、手机）上登录后，大家用的是同一份项目数据。只有公司名单里的邮箱能打开这些数据。第一次登录前请先导出备份。');
+  $('clEl').textContent=L('Email','邮箱');$('clPl').textContent=L('Password (6+ characters)','密码（至少 6 位）');
+  $('clSu').textContent=L('First time: create account','第一次用：注册账号');$('clLi').textContent=L('Sign in','登录');
+  $('clHint').textContent=L('Use "create account" once per person; after that always "Sign in".','每个人只需注册一次，之后在任何设备上都点「登录」。');
+  $('clNow').textContent=L('Sync now','立即同步');$('clOut').textContent=L('Sign out','退出登录');$('clX').textContent=L('Back','返回');
+  $('clHr').textContent=L('Restore from cloud','从云端恢复');$('clHd').textContent=L('Yes, delete in cloud','确认从云端删除');
+  let on=!!cl.ses;$('clIn').classList.toggle('hidden',on);$('clOn').classList.toggle('hidden',!on);
+  if(on){let n=Object.keys(cl.st.sh).filter(k=>cl.st.sh[k].t).length;
+    $('clInfo').textContent=L('Signed in: ','已登录：')+cl.ses.email+'\n'+L('Records in cloud: ','云端记录：')+n+(cl.last?'\n'+L('Last sync: ','上次同步：')+clTime(cl.last):'')+(cl.busy?'\n'+L('Syncing…','正在同步…'):'');
+    $('clHold').classList.toggle('hidden',!cl.hold);
+    if(cl.hold)$('clHoldT').textContent=L('This device has '+cl.hold.length+' fewer jobs than the cloud. To prevent accidental loss these deletions were NOT sent. If you deleted them on purpose, confirm; otherwise restore.','本机比云端少了 '+cl.hold.length+' 个项目。为防误删，这些删除还没有同步到云端。如果是你自己删的，点确认；否则点恢复。')}
+  $('clMsg').textContent=cl.err||''}
+function clOpen(){$('cdg').classList.remove('hidden');clShow()}
+function clClose(){$('cdg').classList.add('hidden')}
+function clLogin(kind){return async()=>{let em=$('clE').value.trim(),pw=$('clP').value;
+  if(!em||pw.length<6){$('clMsg').textContent=L('Enter an email and a password of at least 6 characters','请填邮箱和至少 6 位的密码');return}
+  $('clMsg').textContent=L('Please wait…','请稍候…');
+  try{let ok=await clAuth(kind,em,pw);
+    if(!ok){$('clMsg').textContent=L('Account created. Check your inbox to confirm the email, then press Sign in.','注册成功，请先去邮箱点确认链接，再回来按「登录」。');return}
+    $('clP').value='';cl.err='';cl.member=null;clShow();clSync()}
+  catch(e){$('clMsg').textContent=(e instanceof TypeError)?L('Cannot reach the cloud. Check your network.','连不上云端，请检查网络'):L('Failed: ','失败：')+e.message}}}
+function clSignOut(){cl.ses=null;cl.member=null;clPut('yeCloudSes',null);cl.err='';cl.hold=null;clShow()}
+function clInit(){
+  $('clLi').onclick=clLogin('password');$('clSu').onclick=clLogin('signup');$('clNow').onclick=()=>clSync();$('clOut').onclick=clSignOut;$('clX').onclick=clClose;
+  $('clHd').onclick=()=>{cl.okDel=true;clSync()};$('clHr').onclick=()=>{(cl.hold||[]).forEach(k=>delete cl.st.sh[k]);cl.st.cur='';cl.hold=null;clSync()};
+  cl.ses=clGet('yeCloudSes');let st=clGet('yeCloudSt');if(st&&st.sh)cl.st=st;clShow();if(cl.ses)clSync();
+  document.addEventListener('input',()=>{clLastInput=Date.now()});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&cl.ses)clTouch()});
+  setInterval(()=>{if(cl.ses&&!document.hidden&&navigator.onLine!==false)clSync()},60000)}
+init();clInit();
 </script></body></html>
