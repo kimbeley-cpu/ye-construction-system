@@ -708,14 +708,14 @@ $('cloudBar').addEventListener('click',e=>{const a=e.target.closest('[data-a]');
 function panel(html){$('tsPanelBox').innerHTML='<button type="button" class="btn btn-soft pn-x" id="pnX">Close</button>'+html;$('tsPanel').hidden=false;document.body.style.overflow='hidden';$('pnX').onclick=panelClose}
 function panelClose(){$('tsPanel').hidden=true;document.body.style.overflow=''}
 function panelLogin(){
-  panel('<h2>Sign in</h2><p class="note">Use the email the office has on the staff list.</p><label for="pnE">Email</label><input type="email" id="pnE" autocomplete="username"><label for="pnP">Password (6 or more characters)</label><input type="password" id="pnP" autocomplete="current-password"><div class="pn-row"><button type="button" class="btn btn-soft" id="pnSu">First time: create account</button><button type="button" class="btn btn-primary" id="pnLi">Sign in</button></div><p class="note bad" id="pnMsg"></p>');
+  panel('<h2>Sign in</h2><p class="note">Use the email the office has on the staff list.</p><label for="pnE">Email</label><input type="email" id="pnE" autocomplete="username"><label for="pnP">Password (6 or more characters)</label><input type="password" id="pnP" autocomplete="current-password"><div class="pn-row"><button type="button" class="btn btn-primary" id="pnLi">Sign in</button></div><p class="note">No account yet? Ask the office to create one for you.</p><p class="note bad" id="pnMsg"></p>');
   const go=kind=>async()=>{const em=$('pnE').value.trim(),pw=$('pnP').value,m=$('pnMsg');
     if(!em||pw.length<6){m.textContent='Enter your email and a password of at least 6 characters.';return}
     m.textContent='Please wait…';
     try{const ok=await tsAuth(kind,em,pw);if(!ok){m.textContent='Account created. Open the confirmation email, then come back and sign in.';return}
       panelClose();ts.msg='';await tsBoot()}
     catch(e){m.textContent=/signups? not allowed|signup is disabled/i.test(e.message)?'New accounts are switched off. Ask the office to create your account.':netMsg(e)}};
-  $('pnLi').onclick=go('password');$('pnSu').onclick=go('signup')}
+  $('pnLi').onclick=go('password');$('pnP').onkeydown=e=>{if(e.key==='Enter')$('pnLi').click()}}
 const ST={draft:'Draft',submitted:'Submitted',returned:'Returned',approved:'Approved'};
 const nzd=d=>d?d.split('-').reverse().join('/'):'';
 async function panelList(all){
@@ -736,7 +736,7 @@ async function panelList(all){
 async function staffDraw(){
   const box=$('pnStaffBody');box.innerHTML='<p class="note">Loading…</p>';
   try{const a=await tsFetch('/rest/v1/ye_staff?select=email,name&order=email');
-    box.innerHTML='<p class="note">Managers can always sign in. Add each employee’s email here; they also need an account (create it in Supabase, or let them use “First time: create account”).</p>'+a.map(x=>'<div class="pn-srow"><span><strong>'+esc(x.name||'')+'</strong> '+esc(x.email)+'</span><button type="button" class="btn btn-remove" data-e="'+esc(x.email)+'">Remove</button></div>').join('')+'<div class="pn-filter"><input type="text" id="stN" placeholder="Name"><input type="email" id="stE" placeholder="Email"><button type="button" class="btn btn-primary" id="stAdd">Add</button></div><p class="note bad" id="stMsg"></p>';
+    box.innerHTML='<p class="note">Managers can always sign in. Add each employee’s email here; they also need an account, which you create in Supabase (Authentication → Users → Add user).</p>'+a.map(x=>'<div class="pn-srow"><span><strong>'+esc(x.name||'')+'</strong> '+esc(x.email)+'</span><button type="button" class="btn btn-remove" data-e="'+esc(x.email)+'">Remove</button></div>').join('')+'<div class="pn-filter"><input type="text" id="stN" placeholder="Name"><input type="email" id="stE" placeholder="Email"><button type="button" class="btn btn-primary" id="stAdd">Add</button></div><p class="note bad" id="stMsg"></p>';
     $('stAdd').onclick=async()=>{const em=$('stE').value.trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){$('stMsg').textContent='Enter a valid email.';return}
       try{await tsFetch('/rest/v1/ye_staff',{method:'POST',body:JSON.stringify({email:em,name:$('stN').value.trim()}),prefer:'resolution=merge-duplicates'});staffDraw()}catch(e){$('stMsg').textContent=netMsg(e)}};
     box.querySelectorAll('[data-e]').forEach(b=>twoTap(b,'Tap again to remove',async()=>{try{await tsFetch('/rest/v1/ye_staff?email=eq.'+encodeURIComponent(b.dataset.e),{method:'DELETE'});staffDraw()}catch(e){$('stMsg').textContent=netMsg(e)}}))}
