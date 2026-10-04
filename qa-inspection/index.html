@@ -65,7 +65,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
 .chips input:checked+span{border-color:var(--deep);background:var(--deep);color:#fff}
 .chips input:focus-visible+span{outline:2px solid var(--blue);outline-offset:2px}
 .viewing .chips input:not(:checked)+span{opacity:.45}
-#supplyOther{margin-top:10px}
+#supplyOther,#drainOther{margin-top:10px}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;margin:0;padding:0 18px;border:0;border-radius:var(--r);font-size:15px;font-weight:700;line-height:1.2;text-align:center;cursor:pointer}
 .btn-primary{background:var(--deep);color:#fff}
@@ -80,6 +80,8 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
 .tpl button{min-height:56px;padding:8px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff;text-align:left;cursor:pointer;line-height:1.25}
 .tpl button strong{display:block;font-size:15px;color:var(--ink)}
 .tpl button span{font-size:12px;color:var(--muted)}
+.tpl.stg{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tpl.stg button strong{font-size:14px}
 .tpl button[aria-pressed=true]{border-color:var(--deep);background:var(--tint);box-shadow:inset 0 0 0 1px var(--deep)}
 
 /* checklist */
@@ -204,6 +206,9 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
 .head h1{font-size:22px}
 .section{padding:20px 16px}
 .grid{grid-template-columns:1fr 1fr}
+.tpl.stg{grid-template-columns:1fr}
+.tpl.stg button{min-height:48px;display:flex;align-items:baseline;gap:8px}
+.tpl.stg button strong{display:inline}
 .qsec{margin-left:-4px;margin-right:-4px}
 .qi{grid-template-columns:1fr;padding:12px}
 .seg{display:grid;grid-template-columns:repeat(3,1fr)}
@@ -271,8 +276,14 @@ body{background:#fff;font-size:12px}
 <section class="section identity"><div class="grid">
 <div class="full"><div class="label">Form 表格</div>
 <div class="tpl" id="tplPick" role="group" aria-label="Form">
-<button type="button" data-t="hydraulic" aria-pressed="true"><strong>Hydraulic QA</strong><span>Set-out · Fit-off · Test &amp; completion</span></button>
-<button type="button" data-t="company" aria-pressed="false"><strong>Company QA 公司表格</strong><span>Preline 穿管 · Postline 封板前 · Fit off 安装</span></button>
+<button type="button" data-t="hydraulic" aria-pressed="true"><strong>Hydraulic QA 水路表格</strong><span>Builder’s hydraulic QA items 总包水路检查项目</span></button>
+<button type="button" data-t="company" aria-pressed="false"><strong>Company QA 公司表格</strong><span>YE Construction’s own QA items 公司检查项目</span></button>
+</div></div>
+<div class="full"><div class="label">QA stage 检查阶段</div>
+<div class="tpl stg" id="stgPick" role="group" aria-label="QA stage">
+<button type="button" data-g="setout" aria-pressed="true"><strong>Set-out</strong><span>定位</span></button>
+<button type="button" data-g="lining" aria-pressed="false"><strong>Before Gib Lining</strong><span>封板前检查</span></button>
+<button type="button" data-g="fitoff" aria-pressed="false"><strong>Fit-off, Test &amp; Completion</strong><span>安装、测试和完工</span></button>
 </div></div>
 <div class="full"><label for="site">Site address 地址 <span class="req">*</span></label><input type="text" id="site" name="site" placeholder="e.g. 429 Great North Road" autocomplete="street-address"></div>
 <div><label for="floor">Floor No. 楼层 <span class="req">*</span></label><input type="text" id="floor" name="floor" placeholder="e.g. LEVEL 01" autocomplete="off"></div>
@@ -281,8 +292,9 @@ body{background:#fff;font-size:12px}
 <div><label for="date">Date 日期 <span class="req">*</span></label><input type="date" id="date" name="date" data-ph="Select date"></div>
 <div class="full"><div class="label">Pipe work installed 管材</div>
 <div class="pipes">
-<div class="pgrp" id="drainGrp" role="radiogroup" aria-label="Drain system"><div class="label">Drain system 排水</div><div class="chips" id="drainChips"></div></div>
-<div class="pgrp" id="supplyGrp" role="radiogroup" aria-label="Water supply system"><div class="label">Water supply system 给水</div><div class="chips" id="supplyChips"></div>
+<div class="pgrp" id="drainGrp" role="group" aria-label="Drain system"><div class="label">Drain system 排水 <span class="zh">(choose all that apply 可多选)</span></div><div class="chips" id="drainChips"></div>
+<input type="text" id="drainOther" name="drainOther" placeholder="Type the pipe material 输入管材名称" hidden></div>
+<div class="pgrp" id="supplyGrp" role="group" aria-label="Water supply system"><div class="label">Water supply system 给水 <span class="zh">(choose all that apply 可多选)</span></div><div class="chips" id="supplyChips"></div>
 <input type="text" id="supplyOther" name="supplyOther" placeholder="Type the pipe material 输入管材名称" hidden></div>
 </div></div>
 <p class="full note" id="saveStatus" role="status"></p>
@@ -292,22 +304,22 @@ body{background:#fff;font-size:12px}
 <div class="watermarks" aria-hidden="true"><img alt=""><img alt=""><img alt=""></div>
 
 <section class="section"><h2><span class="badge">1</span>Checklist 检查项目</h2>
-<p class="note">Tap ✓ when it is done, ✗ when there is a problem (say what is wrong), N/A when it does not apply to this room (add a note if useful). A section you have not reached yet can stay empty, but once you start a section, answer every item in it. To change an answer, tap a different one. “Select all” ticks every item still empty; “Clear all” empties the whole section (tap it twice).<br>完成点 ✓，有问题点 ✗ 并写明原因，不适用点 N/A（可写备注）。还没做到的阶段可以留空，但开始的阶段必须每项都填。要改答案，直接点另一个选项。“全部选择”把还没填的项全部打 ✓；“全部取消”清空整段（要点两次）。</p>
+<p class="note">Tap ✓ when it is done, ✗ when there is a problem (say what is wrong), N/A when it does not apply to this room (add a note if useful). Answer every item on this stage. To change an answer, tap a different one. “Select all” ticks every item still empty; “Clear all” empties the whole section (tap it twice).<br>完成点 ✓，有问题点 ✗ 并写明原因，不适用点 N/A（可写备注）。本阶段每一项都要填。要改答案，直接点另一个选项。“全部选择”把还没填的项全部打 ✓；“全部取消”清空整段（要点两次）。</p>
 <div id="checklist"></div>
 </section>
 
 <section class="section"><h2><span class="badge">2</span>Additional Notes 备注</h2>
-<textarea id="notes" name="notes" rows="3" placeholder="Anything the office or builder should know"></textarea>
+<textarea id="notes" name="notes" rows="3" placeholder="Anything the office or builder should know 给办公室或总包的说明"></textarea>
 </section>
 
 <section class="section"><h2><span class="badge">3</span>Photos 照片</h2>
-<label class="upload"><span class="cam" aria-hidden="true">📷</span><strong>Site photos 现场照片</strong><span class="hint">Pipe work, nogs, mixers, test gauge. Fill in the site and room first so they are printed on each photo.</span><span class="btn btn-primary" id="phBtn">Take / Upload Photos</span><input type="file" id="phInput" accept="image/*" multiple hidden></label>
+<label class="upload"><span class="cam" aria-hidden="true">📷</span><strong>Site photos 现场照片</strong><span class="hint">Pipe work, nogs, mixers, test gauge. Fill in the site and room first so they are printed on each photo.<br>管道、木头、混水阀、压力表。先填好地址和房号，照片上才会印上。</span><span class="btn btn-primary" id="phBtn">Take / Upload Photos 拍照/上传</span><input type="file" id="phInput" accept="image/*" multiple hidden></label>
 <label class="stamp"><input type="checkbox" id="stampOn" checked>Stamp date, time, address and room on new photos 照片加时间地址水印</label>
 <div id="thumbs" class="thumbs"></div>
 </section>
 
 <section class="section"><h2><span class="badge">4</span>Data Check 数据检查</h2>
-<p class="note">Updates as you fill in the sheet. Tap a line to jump to it. Red items must be fixed before you submit.</p>
+<p class="note">Updates as you fill in the sheet. Tap a line to jump to it. Red items must be fixed before you submit.<br>填表时自动检查，点一行可跳到该处。红色项目必须改好才能提交。</p>
 <div id="checkBox" class="chk" style="margin-top:14px"></div>
 </section>
 
@@ -319,14 +331,14 @@ body{background:#fff;font-size:12px}
 <div class="sig-wrap" id="sigWrap" data-state="idle" role="group" aria-labelledby="sigLabel">
 <canvas id="sigPad"></canvas>
 <img id="sigImg" class="sig-img" alt="Inspector signature" hidden>
-<span class="sig-hint" id="sigHint" hidden>Sign above the line</span>
+<span class="sig-hint" id="sigHint" hidden>Sign above the line 在线上签名</span>
 <button type="button" class="sig-overlay" id="sigStart">✍ Tap here to sign 点此签名</button>
 </div>
 <div class="sig-actions">
-<button type="button" class="btn btn-soft" id="sigUndo" hidden>↶ Undo</button>
-<button type="button" class="btn btn-soft" id="sigClear" hidden>Clear</button>
-<button type="button" class="btn btn-primary" id="sigDone" hidden>✔ Done</button>
-<button type="button" class="btn btn-soft" id="sigRedo" hidden>✍ Re-sign</button>
+<button type="button" class="btn btn-soft" id="sigUndo" hidden>↶ Undo 撤销</button>
+<button type="button" class="btn btn-soft" id="sigClear" hidden>Clear 清除</button>
+<button type="button" class="btn btn-primary" id="sigDone" hidden>✔ Done 完成</button>
+<button type="button" class="btn btn-soft" id="sigRedo" hidden>✍ Re-sign 重签</button>
 </div>
 <div class="sig-msg" id="sigMsg" role="status"></div>
 </div>
@@ -334,7 +346,7 @@ body{background:#fff;font-size:12px}
 </div>
 </section>
 
-<section class="section"><h2><span class="badge">6</span>Office Check <small>(office use 管理填写)</small></h2>
+<section class="section"><h2><span class="badge">6</span>Office Check 办公室审核 <small>(office use 管理填写)</small></h2>
 <div class="grid">
 <div><label for="approverName">Checked by 审核人</label><input type="text" id="approverName" name="approverName"></div>
 <div><label for="approverDate">Date checked 审核日期</label><input type="date" id="approverDate" name="approverDate" data-ph="Select date"></div>
@@ -344,14 +356,14 @@ body{background:#fff;font-size:12px}
 
 <section class="section">
 <div class="actions">
-<button type="button" class="btn btn-clear" id="resetBtn">Clear Form</button>
-<label class="btn btn-soft load">Load from File<input type="file" id="loadInput" accept=".json,application/json" hidden></label>
-<button type="button" class="btn btn-soft" id="saveFileBtn">Save to File</button>
+<button type="button" class="btn btn-clear" id="resetBtn">Clear Form 清空表格</button>
+<label class="btn btn-soft load">Load from File 打开文件<input type="file" id="loadInput" accept=".json,application/json" hidden></label>
+<button type="button" class="btn btn-soft" id="saveFileBtn">Save to File 保存文件</button>
 <button type="button" class="btn btn-soft" id="nextBtn">Next Room 下一个房间</button>
-<button type="button" class="btn btn-soft" id="printBtn">Print / Save as PDF</button>
+<button type="button" class="btn btn-soft" id="printBtn">Print / Save as PDF 打印/存PDF</button>
 <button type="button" class="btn btn-primary" id="submitBtn">Submit to Office 提交</button>
 </div>
-<p class="note">Your sheet saves automatically on this device, and to the office once you are signed in. One sheet is one room. After you submit, a new sheet opens with the same site, floor, inspector and pipes filled in, ready for the next room.</p>
+<p class="note">Your sheet saves automatically on this device, and to the office once you are signed in. One sheet is one room at one stage. After you submit, a new sheet opens with the same site, floor, stage, inspector and pipes filled in, ready for the next room.<br>表格自动保存在本机，登录后也会保存到办公室。一张表 = 一个房间的一个阶段。提交后会开一张新表，地址、楼层、阶段、检查人和管材都保留，接着填下一个房间。</p>
 </section>
 </form></div>
 <div class="ovl" id="qaPanel" hidden><div class="ovl-box" id="qaPanelBox"></div></div>
@@ -361,13 +373,13 @@ body{background:#fff;font-size:12px}
 'use strict';
 const COMPANY='YE Construction';
 const KEY='ye_qa_v1',CARRY='ye_qa_carry';
-const DRAIN=['Raupiano','U-PVC'];
+const DRAIN=['Raupiano','U-PVC','Other'];
 const SUPPLY=['Rehau PEX','NZ B-Press copper','Stainless steel','Aus PEX','Brass','Other'];
-/* ---------- the two forms ----------
+/* ---------- the two forms, each split into three stages ----------
    Item ids are saved with each sheet, so never reuse or renumber an id. Add new items with new ids. */
 const TPL={
-hydraulic:{name:'Hydraulic QA',flow:'col',secs:[
- {k:'setout',t:'HYDRAULIC – SET-OUT',zh:'管道定位',items:[
+hydraulic:{name:'Hydraulic QA',flow:'col',zh:true,secs:[
+ {k:'setout',st:'setout',t:'HYDRAULIC – SET-OUT',zh:'管道定位',items:[
   ['s1','Layout set to current construction set drawings (waste pipes and mixers)','按最新施工图纸放线（排水管和混水阀）'],
   ['s2','Fit-off materials match schedule on plans','安装材料与图纸清单一致'],
   ['s3','Set-outs / minimum clearances as per plan','定位和最小间距符合图纸'],
@@ -384,7 +396,7 @@ hydraulic:{name:'Hydraulic QA',flow:'col',secs:[
   ['s14','Mixers are placed to fit the wall thickness','混水阀深度适合墙体厚度'],
   ['s15','Nogs are installed for wall hung vanities / shower sliders','挂墙水盆和淋浴滑杆的木头已加'],
   ['s16','Tundish for air conditioning is placed correctly','空调排水漏斗位置正确']]},
- {k:'fitoff',t:'HYDRAULIC – FIT-OFF',zh:'安装',items:[
+ {k:'fitoff',st:'fitoff',t:'HYDRAULIC – FIT-OFF',zh:'安装',items:[
   ['f1','Valve trains are installed for both hot and cold water supplies','冷热水供水阀组均已安装'],
   ['f2','Hose taps are complete with vacuum breakers','花园水龙头装有防虹吸阀'],
   ['f3','HWC relief lines have 25 clearance','热水器泄压管留有25间隙'],
@@ -399,7 +411,7 @@ hydraulic:{name:'Hydraulic QA',flow:'col',secs:[
   ['f12','Shower hoses fitted with non-returns','淋浴软管装有止回阀'],
   ['f13','FWG recessed into flooring and installed','地漏嵌入地面并安装好'],
   ['f14','Site cleaned after fit-off work','安装完成后现场已清理']]},
- {k:'test',t:'HYDRAULIC – TEST & COMPLETION DOCUMENTS',zh:'测试和竣工文件',items:[
+ {k:'test',st:'fitoff',t:'HYDRAULIC – TEST & COMPLETION DOCUMENTS',zh:'测试和竣工文件',items:[
   ['t1','Water tested to 1500 kPa and loop does not affect lining','打压1500kPa，管路不影响封板'],
   ['t2','Checked for drips on water and waste piping','给排水管检查无滴漏'],
   ['t3','Picked up all left over materials and removed from site','剩余材料已收走并清离现场'],
@@ -413,7 +425,7 @@ hydraulic:{name:'Hydraulic QA',flow:'col',secs:[
   ['t11','TBV installed','TBV 已安装'],
   ['t12','Pipe systems are flushed','管道系统已冲洗']]}]},
 company:{name:'Company QA',flow:'row',zh:true,secs:[
- {k:'preline',t:'PRELINE',zh:'穿管',items:[
+ {k:'preline',st:'setout',t:'PRELINE',zh:'穿管',items:[
   ['p1','Plans received are updated and stamped','建筑图纸是盖章的且最新的版本'],
   ['p2','Pipe materials are chosen according to the plan','上下水管管材料是图纸规定的类型或品牌'],
   ['p3','Site is cleaned daily','工地每天要按时打扫'],
@@ -442,7 +454,7 @@ company:{name:'Company QA',flow:'row',zh:true,secs:[
   ['p25','Mixer left-over parts are handed to manager and photographed','混水阀配件交给管理保管，拍照留底'],
   ['p26','Pressure test to 1500 kPa over 12 hours','打压测试到1500kPa，持续12小时以上'],
   ['p27','Stack inspection points are blocked off','下水管检查口堵好']]},
- {k:'postline',t:'POSTLINE',zh:'封板前',items:[
+ {k:'postline',st:'lining',t:'BEFORE GIB LINING',zh:'封板前检查',items:[
   {note:'Plumber must check again before lining',zh:'封板以前水工需要再次确认'},
   ['q1','Downpipes are installed before scaffold is taken away','雨水管在脚手架拆之前已装好'],
   ['q2','Stacks are well supported','下水管妥善支撑'],
@@ -452,7 +464,7 @@ company:{name:'Company QA',flow:'row',zh:true,secs:[
   ['q6','CP are in right positions','CP位置准确'],
   ['q7','Check if the AC condensate pipes need to discharge into the waste pipe','空调排水管是否需要接入排水管'],
   ['q8','Left over materials are taken, rubbish is cleaned','剩余材料带走，垃圾清理干净']]},
- {k:'fitoff2',t:'FINAL FIT OFF',zh:'安装',items:[
+ {k:'fitoff2',st:'fitoff',t:'FINAL FIT OFF',zh:'安装',items:[
   ['r1','Sanitary fixtures are delivered on site','安装的水件已到场'],
   ['r2','Pan connectors, toilet valves, unitaps are in place','马桶连接器、阀门软管、三通阀门、浴缸easyclean已备好'],
   ['r3','Check any damage or missing parts of the fixtures on site','检查水件是否有损坏、零件缺失'],
@@ -478,26 +490,43 @@ company:{name:'Company QA',flow:'row',zh:true,secs:[
   ['r23','Toilets have no gaps against the wall','马桶与墙和地面完全接触，没有缝隙'],
   ['r24','Vacuum breakers / non-potable signs installed','花园水龙头防倒流和非饮用水标志已安装']]}]}
 };
+/* Before Gib Lining is the same in both forms: the lining checks plus passive fire */
+const LINING=TPL.company.secs.find(x=>x.k==='postline');
+const FIRE={k:'fire',st:'lining',t:'PASSIVE FIRE',zh:'被动防火',items:[
+  ['pf1','Every riser has enough space left to install the fire collar','每根立管都预留足够位置安装防火圈 (fire collar)'],
+  ['pf2','Core drill holes are the right size','水钻 (core drill) 打的洞大小符合要求'],
+  ['pf3','Wingback / PVC pipes coming out of the wall vertically are long enough for the fire protection','垂直方向出墙的 wingback / PVC 管留足防火所需的长度']]};
+TPL.hydraulic.secs.splice(1,0,LINING,FIRE);
+TPL.company.secs.splice(TPL.company.secs.indexOf(LINING)+1,0,FIRE);
+const STAGES={setout:{en:'Set-out',zh:'定位'},lining:{en:'Before Gib Lining',zh:'封板前检查'},fitoff:{en:'Fit-off, Test & Completion',zh:'安装、测试和完工'}};
+const stageName=g=>STAGES[g]?STAGES[g].en+' '+STAGES[g].zh:'All stages 全部阶段';
 const isItem=x=>Array.isArray(x);
-const tplItems=t=>TPL[t].secs.flatMap(s=>s.items.filter(isItem));
-const F=['site','floor','room','tech','date','drain','supply','supplyOther','notes','dateSigned','approverName','approverDate','approverNote'];
+/* a sheet saved before stages existed has no stage and shows every section */
+const secsOf=(t,g)=>(TPL[t]||TPL.hydraulic).secs.filter(x=>!g||x.st===g);
+const tplItems=(t,g)=>secsOf(t,g).flatMap(x=>x.items.filter(isItem));
+const F=['site','floor','room','tech','date','drain','drainOther','supply','supplyOther','notes','dateSigned','approverName','approverDate','approverNote'];
 const $=id=>document.getElementById(id);
 const form=$('qaForm');
-const chips=(name,list)=>list.map(v=>'<label><input type="radio" name="'+name+'" value="'+v+'"><span>'+v+(v==='Other'?' 其他':'')+'</span></label>').join('');
+const PIPE_ZH={'NZ B-Press copper':'铜管','Stainless steel':'不锈钢','Brass':'黄铜','Other':'其他'};
+const chips=(name,list)=>list.map(v=>'<label><input type="checkbox" name="'+name+'" value="'+v+'"><span>'+v+(PIPE_ZH[v]?' '+PIPE_ZH[v]:'')+'</span></label>').join('');
 $('drainChips').innerHTML=chips('drain',DRAIN);
 $('supplyChips').innerHTML=chips('supply',SUPPLY);
 const el=n=>form.elements[n];
-/* text boxes and the pipe choice buttons both read and write through val()/setVal() */
-const val=k=>el(k).value||'';
-function setVal(k,v){const e=el(k);if(e instanceof RadioNodeList)e.forEach(r=>{r.checked=r.value===v});else e.value=v}
-function syncOther(){const o=$('supplyOther'),on=val('supply')==='Other';o.hidden=!on}
-/* "Rehau PEX", or the typed name when Other is picked */
-const supplyName=f=>f.supply==='Other'?str(f.supplyOther).trim()||'Other':str(f.supply);
+/* text boxes and the pipe choice buttons both read and write through val()/setVal();
+   the pipe groups are multi-select, so they hold a list */
+const MULTI=['drain','supply'];
+const list=v=>Array.isArray(v)?v.filter(x=>typeof x==='string'):(typeof v==='string'&&v?[v]:[]);
+const val=k=>MULTI.includes(k)?[...form.querySelectorAll('input[name="'+k+'"]:checked')].map(x=>x.value):(el(k).value||'');
+function setVal(k,v){if(MULTI.includes(k)){const l=list(v);form.querySelectorAll('input[name="'+k+'"]').forEach(r=>{r.checked=l.includes(r.value)})}else el(k).value=str(v)}
+function syncOther(){MULTI.forEach(k=>{$(k+'Other').hidden=!val(k).includes('Other')})}
+/* "Raupiano, PB pipe" - Other is replaced by the typed name */
+const pipeNames=(v,other)=>list(v).map(x=>x==='Other'?(str(other).trim()||'Other'):x).join(', ');
 function pipeText(f){
-  const a=[];if(f.drain)a.push('Drain: '+f.drain);if(f.supply)a.push('Water supply: '+supplyName(f));
+  const a=[],d=pipeNames(f.drain,f.drainOther),w=pipeNames(f.supply,f.supplyOther);
+  if(d)a.push('Drain 排水: '+d);if(w)a.push('Water supply 给水: '+w);
   return a.length?a.join(' · '):str(f.pipe);
 }
-let tpl='hydraulic',ans={},why={},photos=[],sig=null,saveTimer;
+let tpl='hydraulic',stage='setout',ans={},why={},photos=[],sig=null,saveTimer;
 const pad2=n=>String(n).padStart(2,'0');
 const todayISO=()=>{const t=new Date();return t.getFullYear()+'-'+pad2(t.getMonth()+1)+'-'+pad2(t.getDate())};
 const when=ts=>new Date(ts).toLocaleString('en-NZ',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
@@ -531,25 +560,26 @@ function secStats(s){
   it.forEach(([k])=>{const v=ans[k];if(v==='y')y++;else if(v==='n')n++;else if(v==='na')na++});
   return{total:it.length,done:y+n+na,y,n,na};
 }
-function renderTplPick(){$('tplPick').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===tpl)))}
+function renderTplPick(){$('tplPick').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===tpl)));
+  $('stgPick').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.g===stage)))}
+const curSecs=()=>secsOf(tpl,stage);
 function renderChecklist(){
   renderTplPick();
-  const T=TPL[tpl];
-  $('checklist').innerHTML=T.secs.map(s=>'<div class="qsec" id="sec-'+s.k+'" data-s="'+s.k+'"><div class="qsec-h"><h3>'+esc(s.t)+'<span class="zh">'+esc(s.zh)+'</span></h3><span class="prog"></span>'
+  $('checklist').innerHTML=curSecs().map(s=>'<div class="qsec" id="sec-'+s.k+'" data-s="'+s.k+'"><div class="qsec-h"><h3>'+esc(s.t)+'<span class="zh">'+esc(s.zh)+'</span></h3><span class="prog"></span>'
     +'<div class="qsec-q"><button type="button" class="btn" data-q="y">✓ Select all 全部选择</button><button type="button" class="btn q-clear">Clear all 全部取消</button></div></div>'
     +s.items.map(x=>isItem(x)
       ?'<div class="qi" id="qi-'+x[0]+'" data-k="'+x[0]+'"><div class="qi-t">'+esc(x[1])+'<span class="zh">'+esc(x[2])+'</span></div>'
         +'<div class="seg" role="group" aria-label="'+esc(x[1])+'"><button type="button" data-v="y" aria-label="Done">✓</button><button type="button" data-v="n" aria-label="Problem">✗</button><button type="button" data-v="na">N/A</button></div>'
         +'<input type="text" class="qi-why" placeholder="What is wrong? 问题说明" hidden></div>'
       :'<p class="qnote">'+esc(x.note)+' '+esc(x.zh)+'</p>').join('')+'</div>').join('');
-  tplItems(tpl).forEach(([k])=>paintItem(k));
+  tplItems(tpl,stage).forEach(([k])=>paintItem(k));
   /* clearing a whole section takes two taps, so a stray touch can't wipe it */
   $('checklist').querySelectorAll('.q-clear').forEach(b=>twoTap(b,'Tap again to clear 再点一次确认',()=>{
     if(form.classList.contains('viewing'))return;
     const s=TPL[tpl].secs.find(x=>x.k===b.closest('.qsec').dataset.s);
     s.items.filter(isItem).forEach(([k])=>{delete ans[k];delete why[k];paintItem(k)});
-    TPL[tpl].secs.forEach(paintSec);renderCheck();sched()}));
-  T.secs.forEach(paintSec);
+    curSecs().forEach(paintSec);renderCheck();sched()}));
+  curSecs().forEach(paintSec);
   if(form.classList.contains('viewing'))lockChecklist(true);
 }
 function paintItem(k){
@@ -574,10 +604,11 @@ $('checklist').addEventListener('click',e=>{
   else if(q){const s=TPL[tpl].secs.find(x=>x.k===q.closest('.qsec').dataset.s);
     s.items.filter(isItem).forEach(([k])=>{if(!ans[k]){ans[k]=q.dataset.q;paintItem(k)}})}
   else return;
-  TPL[tpl].secs.forEach(paintSec);renderCheck();sched();
+  curSecs().forEach(paintSec);renderCheck();sched();
 });
 $('checklist').addEventListener('input',e=>{if(e.target.classList.contains('qi-why')){why[e.target.closest('.qi').dataset.k]=e.target.value;renderCheck()}});
-$('tplPick').addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(!b||b.dataset.t===tpl)return;tpl=b.dataset.t;renderChecklist();renderCheck();sched()});
+$('tplPick').addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(!b||b.dataset.t===tpl||form.classList.contains('viewing'))return;tpl=b.dataset.t;renderChecklist();renderCheck();sched()});
+$('stgPick').addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b||b.dataset.g===stage||form.classList.contains('viewing'))return;stage=b.dataset.g;renderChecklist();renderCheck();sched()});
 /* ---------- photos ---------- */
 /* Read the "date taken" from a JPEG's EXIF so a photo picked from the gallery keeps its real time. */
 function exifDate(buf){
@@ -653,32 +684,33 @@ $('phInput').addEventListener('change',e=>{
 /* ---------- data check ---------- */
 function check(d){
   const out=[],E=(m,go)=>out.push({t:'e',m,go}),W=(m,go)=>out.push({t:'w',m,go}),I=(m,go)=>out.push({t:'i',m,go});
-  const f=d.f,T=TPL[d.tpl]||TPL.hydraulic;
+  const f=d.f,secs=secsOf(d.tpl,d.stage);
   [['site','Site address 地址'],['floor','Floor No. 楼层'],['room','Room / Unit No. 房号'],['tech','Inspector'],['date','Date 日期']].forEach(([k,l])=>{if(!str(f[k]).trim())E(l+' is empty 未填写',k)});
   if(f.date&&f.date>todayISO())W('Date '+nzd(f.date)+' is in the future 日期是未来的日期','date');
-  if(!f.drain)W('Drain system pipe not chosen 排水管材未选','drainGrp');
-  if(!f.supply)W('Water supply pipe not chosen 给水管材未选','supplyGrp');
-  else if(f.supply==='Other'&&!str(f.supplyOther).trim())E('Water supply: type the pipe material 请输入给水管材名称','supplyOther');
+  if(!list(f.drain).length)W('Drain system pipe not chosen 排水管材未选','drainGrp');
+  else if(list(f.drain).includes('Other')&&!str(f.drainOther).trim())E('Drain system: type the pipe material 请输入排水管材名称','drainOther');
+  if(!list(f.supply).length)W('Water supply pipe not chosen 给水管材未选','supplyGrp');
+  else if(list(f.supply).includes('Other')&&!str(f.supplyOther).trim())E('Water supply: type the pipe material 请输入给水管材名称','supplyOther');
   let full=0;
-  T.secs.forEach(s=>{
+  secs.forEach(s=>{
     const it=s.items.filter(isItem),st={done:0,total:it.length};
     it.forEach(([k])=>{if(d.ans[k])st.done++});
-    if(!st.done)I(s.t+' — not inspected yet (left empty) 未检查','sec-'+s.k);
+    if(!st.done)(d.stage?E:I)(s.t+' '+s.zh+' — not answered yet 还没填','sec-'+s.k);
     else if(st.done<st.total){
       const miss=it.filter(([k])=>!d.ans[k]);
       E(s.t+': '+miss.length+' item(s) not answered 项未填 — '+miss.slice(0,3).map(x=>'“'+x[1]+'”').join(', ')+(miss.length>3?' …':''),'qi-'+miss[0][0]);
     }else full++;
     it.forEach(([k,en])=>{if(d.ans[k]==='n'&&!str(d.why[k]).trim())E('✗ “'+en+'” — say what is wrong 请写明问题','qi-'+k)});
   });
-  const fails=tplItems(d.tpl).filter(([k])=>d.ans[k]==='n').length;
+  const fails=tplItems(d.tpl,d.stage).filter(([k])=>d.ans[k]==='n').length;
   if(fails)W(fails+' item(s) marked ✗ — the office will follow these up 有 '+fails+' 项问题',null);
-  if(!full)E('Finish at least one section 至少完成一个阶段','sec-'+T.secs[0].k);
+  if(!d.stage&&!full)E('Finish at least one section 至少完成一段','sec-'+secs[0].k);
   if(!d.photos)W('No photos added 没有照片','phBtn');
   if(!d.sig)E('Not signed 未签名','sigWrap');
   if(d.sig&&!f.dateSigned)E('Date completed is empty 完成日期未填写','dateSigned');
   return out;
 }
-function curCheckData(){return{tpl,f:Object.fromEntries(F.map(k=>[k,val(k)])),ans,why,photos:photos.length,sig:!!sig}}
+function curCheckData(){return{tpl,stage,f:Object.fromEntries(F.map(k=>[k,val(k)])),ans,why,photos:photos.length,sig:!!sig}}
 function renderCheck(){
   const list=check(curCheckData()),errs=list.filter(x=>x.t==='e').length,box=$('checkBox');
   box.className='chk '+(errs?'err':'ok');
@@ -774,14 +806,15 @@ $('sigClear').addEventListener('click',()=>{strokes=[];repaint()});
 $('sigDone').addEventListener('click',doneSign);
 /* ---------- printed sheet ---------- */
 function sheetHTML(d){
-  const T=TPL[d.tpl]||TPL.hydraulic,f=d.f||{},A=d.ans||{},Y=d.why||{};
+  const T=TPL[d.tpl]||TPL.hydraulic,secs=secsOf(d.tpl,d.stage),f=d.f||{},A=d.ans||{},Y=d.why||{};
   const mark=v=>v==='y'?'<span class="m">√</span>':v==='na'?'<span class="m">N/A</span>':v==='n'?'<span class="m n">✗</span>':'<span class="m"></span>';
-  let h='<div class="sheet'+(T.zh?' bi':'')+'"><img class="sh-logo" src="'+$('logo').src+'" alt="'+esc(COMPANY)+'"><p class="sh-band">'+esc(COMPANY)+' Quality Assurance Plumbing Sheet</p>'
-   +'<div class="sh-meta"><div class="full" style="grid-column:1/-1"><b>Site address</b><span>'+esc(f.site)+'</span></div>'
-   +'<div><b>Floor NO.</b><span>'+esc(f.floor)+'</span></div><div><b>Room NO.</b><span>'+esc(f.room)+'</span></div>'
-   +'<div><b>Inspector</b><span>'+esc(f.tech)+'</span></div><div><b>Date</b><span>'+esc(nzd(f.date))+'</span></div>'
-   +'<div style="grid-column:1/-1;padding-left:8mm"><b>Pipe work installed</b><span>'+esc(pipeText(f))+'</span></div></div>';
-  T.secs.forEach(s=>{
+  let h='<div class="sheet'+(T.zh?' bi':'')+'"><img class="sh-logo" src="'+$('logo').src+'" alt="'+esc(COMPANY)+'"><p class="sh-band">'+esc(COMPANY)+' Quality Assurance Plumbing Sheet 水工质量检查表</p>'
+   +'<div class="sh-meta"><div style="grid-column:1/-1"><b>QA stage 检查阶段</b><span>'+esc(stageName(d.stage))+'</span></div>'
+   +'<div style="grid-column:1/-1"><b>Site address 地址</b><span>'+esc(f.site)+'</span></div>'
+   +'<div><b>Floor NO. 楼层</b><span>'+esc(f.floor)+'</span></div><div><b>Room NO. 房号</b><span>'+esc(f.room)+'</span></div>'
+   +'<div><b>Inspector</b><span>'+esc(f.tech)+'</span></div><div><b>Date 日期</b><span>'+esc(nzd(f.date))+'</span></div>'
+   +'<div style="grid-column:1/-1"><b>Pipe work installed 管材</b><span>'+esc(pipeText(f))+'</span></div></div>';
+  secs.forEach(s=>{
     const it=s.items;
     h+='<p class="sh-band">'+esc(s.t)+(T.zh?' '+esc(s.zh):'')+'</p>';
     it.filter(x=>!isItem(x)).forEach(x=>{h+='<div class="sh-note">'+esc(x.note)+(T.zh?' '+esc(x.zh):'')+'</div>'});
@@ -790,18 +823,18 @@ function sheetHTML(d){
       +items.map(([k,en,zh])=>'<div class="sh-it"><span class="t">'+esc(en)+(T.zh?'<i>'+esc(zh)+'</i>':'')+'</span>'+mark(A[k])+'</div>').join('')+'</div>';
   });
   /* ✗ items with their reason, then N/A items that have a note */
-  const its=tplItems(d.tpl||'hydraulic'),lines=[];
+  const its=tplItems(d.tpl||'hydraulic',d.stage),lines=[];
   if(str(f.notes).trim())lines.push(esc(f.notes));
   its.filter(([k])=>A[k]==='n').forEach(([k,en])=>lines.push('<span class="f">✗ '+esc(en)+(Y[k]?': '+esc(Y[k]):'')+'</span>'));
   its.filter(([k])=>A[k]==='na'&&str(Y[k]).trim()).forEach(([k,en])=>lines.push('N/A '+esc(en)+': '+esc(Y[k])));
-  h+='<p class="sh-band">Additional Notes</p><div class="sh-notes">'+lines.join('\n')+'</div>';
-  h+='<p class="sh-band left">Sign here to confirm that you have carried out an inspection on relevant works and checked that the information provided above is accurate</p>'
-    +'<div class="sh-sign"><div>Signature'+(d.sig&&isImg(d.sig.data)?'<img src="'+d.sig.data+'" alt="Signature">':'')+'</div><div>Date&nbsp;&nbsp;<strong>'+esc(nzd(f.dateSigned))+'</strong></div></div>';
-  if(f.approverName||f.approverDate||f.approverNote)h+='<div class="sh-off">Checked by: <strong>'+esc(f.approverName)+'</strong>'+(f.approverDate?' · '+esc(nzd(f.approverDate)):'')+(f.approverNote?' · '+esc(f.approverNote):'')+'</div>';
+  h+='<p class="sh-band">Additional Notes 备注</p><div class="sh-notes">'+lines.join('\n')+'</div>';
+  h+='<p class="sh-band left">Sign here to confirm that you have carried out an inspection on relevant works and checked that the information provided above is accurate · 核对所有信息后签字确认</p>'
+    +'<div class="sh-sign"><div>Signature 签名'+(d.sig&&isImg(d.sig.data)?'<img src="'+d.sig.data+'" alt="Signature">':'')+'</div><div>Date 日期&nbsp;&nbsp;<strong>'+esc(nzd(f.dateSigned))+'</strong></div></div>';
+  if(f.approverName||f.approverDate||f.approverNote)h+='<div class="sh-off">Checked by 审核人: <strong>'+esc(f.approverName)+'</strong>'+(f.approverDate?' · '+esc(nzd(f.approverDate)):'')+(f.approverNote?' · '+esc(f.approverNote):'')+'</div>';
   h+='</div>';
   const ph=(d.photos||[]).filter(x=>x&&isImg(x.data));
   for(let i=0;i<ph.length;i+=6){
-    h+='<div class="sheet sh-photos"><p class="sh-ptitle">'+esc([f.site,f.floor,f.room&&('Room '+f.room)].filter(Boolean).join(' · '))+' — photos '+(i+1)+'–'+Math.min(ph.length,i+6)+' of '+ph.length+'</p>'
+    h+='<div class="sheet sh-photos"><p class="sh-ptitle">'+esc([f.site,f.floor,f.room&&('Room '+f.room)].filter(Boolean).join(' · '))+' — '+esc(stageName(d.stage))+' — photos 照片 '+(i+1)+'–'+Math.min(ph.length,i+6)+' / '+ph.length+'</p>'
       +ph.slice(i,i+6).map(p=>'<figure><img src="'+p.data+'" alt="Site photo"></figure>').join('')+'</div>';
   }
   return h;
@@ -817,15 +850,16 @@ function printSheets(list){
 window.addEventListener('beforeprint',()=>{if(!printing)$('printArea').innerHTML=WM+sheetHTML(collect(true))});
 /* ---------- save / restore ---------- */
 function collect(withFiles){
-  const o={v:1,saved:Date.now(),tpl,f:{},ans:{},why:{},photos:withFiles?photos:[],sig};
+  const o={v:2,saved:Date.now(),tpl,stage,f:{},ans:{},why:{},photos:withFiles?photos:[],sig};
   F.forEach(k=>{o.f[k]=val(k)});
   Object.keys(ans).forEach(k=>{o.ans[k]=ans[k];if((ans[k]==='n'||ans[k]==='na')&&why[k])o.why[k]=why[k]});
   return o;
 }
 function restore(o){
   const f=o.f||{};
-  F.forEach(k=>setVal(k,str(f[k])));syncOther();
+  F.forEach(k=>setVal(k,f[k]));syncOther();
   tpl=TPL[o.tpl]?o.tpl:'hydraulic';
+  stage=STAGES[o.stage]?o.stage:(o.v===1?'':'setout');
   ans={};why={};
   if(o.ans&&typeof o.ans==='object')Object.keys(o.ans).forEach(k=>{if(['y','n','na'].includes(o.ans[k]))ans[k]=o.ans[k]});
   if(o.why&&typeof o.why==='object')Object.keys(o.why).forEach(k=>{why[k]=str(o.why[k])});
@@ -835,7 +869,7 @@ function restore(o){
 }
 function freshSheet(){
   const c=lsGet(CARRY)||{};
-  restore({tpl:c.tpl,f:{site:str(c.site),floor:str(c.floor),tech:str(c.tech),drain:str(c.drain),supply:str(c.supply),supplyOther:str(c.supplyOther),date:todayISO()}});
+  restore({v:2,tpl:c.tpl,stage:c.stage,f:{site:str(c.site),floor:str(c.floor),tech:str(c.tech),drain:c.drain,drainOther:str(c.drainOther),supply:c.supply,supplyOther:str(c.supplyOther),date:todayISO()}});
 }
 function saveLocal(){
   const t=new Date().toLocaleTimeString('en-NZ',{hour:'numeric',minute:'2-digit'});
@@ -849,13 +883,13 @@ function sched(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{saveTimer=0;s
 ['input','change'].forEach(t=>form.addEventListener(t,e=>{
   const x=e.target;
   if(x.matches&&x.matches('input[type=date]'))nzShow(x);
-  if(x.name==='supply'){syncOther();if(x.value==='Other'&&e.type==='change')$('supplyOther').focus()}
+  if(MULTI.includes(x.name)){syncOther();if(x.value==='Other'&&x.checked&&e.type==='change')$(x.name+'Other').focus()}
   if(x.type==='file'||x.id==='stampOn')return;
   if(!x.classList.contains('qi-why'))renderCheck();
   sched();
 }));
 window.addEventListener('pagehide',()=>{if(saveTimer){clearTimeout(saveTimer);saveTimer=0;save()}});
-const fileName=d=>'QA_'+[d.f.site,d.f.floor,d.f.room].map(s=>str(s).trim()).filter(Boolean).join('_').replace(/[^\w-]+/g,'_')+'_'+(d.f.date||todayISO());
+const fileName=d=>'QA_'+[d.f.site,d.f.floor,d.f.room,STAGES[d.stage]&&STAGES[d.stage].en].map(s=>str(s).trim()).filter(Boolean).join('_').replace(/[^\w-]+/g,'_')+'_'+(d.f.date||todayISO());
 $('saveFileBtn').addEventListener('click',async()=>{
   clearTimeout(saveTimer);saveTimer=0;save();
   const d=collect(true),name=fileName(d)+'.json';
@@ -885,7 +919,7 @@ $('printBtn').addEventListener('click',()=>{
   if(renderCheck()&&!confirm('The data check still shows problems on this sheet. Print anyway?\n数据检查还有问题，仍然打印？'))return;
   printSheets([collect(true)]);
 });
-function rememberCarry(){lsSet(CARRY,{tpl,site:el('site').value.trim(),floor:el('floor').value.trim(),tech:el('tech').value.trim(),drain:val('drain'),supply:val('supply'),supplyOther:val('supplyOther').trim()})}
+function rememberCarry(){lsSet(CARRY,{tpl,site:el('site').value.trim(),floor:el('floor').value.trim(),tech:el('tech').value.trim(),stage:stage||'setout',drain:val('drain'),drainOther:val('drainOther').trim(),supply:val('supply'),supplyOther:val('supplyOther').trim()})}
 $('nextBtn').addEventListener('click',()=>{
   const signedIn=canUse()&&ts.cur;
   if(!confirm('Start a new sheet for the next room?\n\n'+(signedIn?'This sheet stays in “My records” as a draft. Submit it from there when it is finished.':'This sheet will be cleared from the page. Print it or use “Save to File” first if you need it.')+'\n\nSite, floor, inspector and pipes stay filled in.'))return;
@@ -932,8 +966,8 @@ const netMsg=e=>(e instanceof TypeError)?'Can’t reach the office server. Check
 const canUse=()=>ts.ses&&(ts.role==='staff'||ts.role==='manager');
 function hasContent(){return !!(el('room').value.trim()||Object.keys(ans).length||photos.length||sig||el('notes').value.trim())}
 function summary(d){
-  const it=tplItems(d.tpl);
-  return{site:str(d.f.site).trim(),floor:str(d.f.floor).trim(),room:str(d.f.room).trim(),technician:str(d.f.tech).trim(),inspect_date:d.f.date||null,template:d.tpl,
+  const it=tplItems(d.tpl,d.stage);
+  return{site:str(d.f.site).trim(),floor:str(d.f.floor).trim(),room:str(d.f.room).trim(),technician:str(d.f.tech).trim(),inspect_date:d.f.date||null,template:d.tpl+'/'+(d.stage||'all'),
     done:it.filter(([k])=>d.ans[k]).length,total:it.length,fails:it.filter(([k])=>d.ans[k]==='n').length}}
 function save(){if(ts.view)return;saveLocal();tsTouch()}
 function tsTouch(){if(!canUse()||ts.view)return;clearTimeout(ts.timer);ts.timer=setTimeout(()=>tsPushDraft().catch(()=>{}),Math.max(4000,20000-(Date.now()-ts.lastPush)))}
@@ -990,33 +1024,37 @@ function panelLogin(){
   $('pnP').onkeydown=e=>{if(e.key==='Enter')$('pnLi').click()}}
 const ST={draft:'Draft',submitted:'Submitted',returned:'Returned',approved:'Checked'};
 const natural=(a,b)=>String(a||'').localeCompare(String(b||''),undefined,{numeric:true,sensitivity:'base'});
-const roomKey=r=>[r.site,r.floor,r.room].map(s=>String(s||'').trim().toLowerCase()).join('|');
+const rowStage=r=>String(r.template||'').split('/')[1]||'';
+const rowForm=r=>(String(r.template||'').split('/')[0]==='company'?'Company':'Hydraulic');
+/* one room has one sheet per stage; two sheets for the same room and stage is the mistake to flag */
+const roomKey=r=>[r.site,r.floor,r.room,r.template].map(s=>String(s||'').trim().toLowerCase()).join('|');
 async function panelList(all){
   panel('<h2>'+(all?'All QA sheets':'My QA sheets')+'</h2><div id="pnBody"><p class="note">Loading…</p></div>');
   try{
     const rows=await tsFetch(QA_T+'?select='+LIST+(all?'&status=neq.draft':'&user_id=eq.'+ts.ses.uid)+'&order=updated_at.desc&limit=1000');
-    rows.sort((a,b)=>natural(a.site,b.site)||natural(a.floor,b.floor)||natural(a.room,b.room));
+    const GO=['setout','lining','fitoff'];
+    rows.sort((a,b)=>natural(a.site,b.site)||natural(a.floor,b.floor)||(GO.indexOf(rowStage(a))-GO.indexOf(rowStage(b)))||natural(a.room,b.room));
     const sites=[...new Set(rows.map(r=>r.site).filter(Boolean))],floors=[...new Set(rows.map(r=>r.floor).filter(Boolean))].sort(natural);
-    let h='<div class="pn-filter"><input type="search" id="pnQ" placeholder="Search room, name or email"><select id="pnSite"><option value="">All sites</option>'+sites.map(s=>'<option>'+esc(s)+'</option>').join('')+'</select><select id="pnFloor"><option value="">All floors</option>'+floors.map(s=>'<option>'+esc(s)+'</option>').join('')+'</select><select id="pnS"><option value="">All statuses</option>'+(all?'':'<option value="draft">Draft</option>')+'<option value="submitted">Submitted (waiting)</option><option value="approved">Checked</option><option value="returned">Returned</option></select></div>';
+    let h='<div class="pn-filter"><input type="search" id="pnQ" placeholder="Search room, name or email"><select id="pnSite"><option value="">All sites</option>'+sites.map(s=>'<option>'+esc(s)+'</option>').join('')+'</select><select id="pnFloor"><option value="">All floors</option>'+floors.map(s=>'<option>'+esc(s)+'</option>').join('')+'</select><select id="pnStg"><option value="">All stages 全部阶段</option>'+Object.keys(STAGES).map(g=>'<option value="'+g+'">'+esc(stageName(g))+'</option>').join('')+'</select><select id="pnS"><option value="">All statuses</option>'+(all?'':'<option value="draft">Draft</option>')+'<option value="submitted">Submitted (waiting)</option><option value="approved">Checked</option><option value="returned">Returned</option></select></div>';
     h+='<div class="pn-row" style="justify-content:flex-start;margin:0 0 6px"><button type="button" class="btn btn-soft" id="pnPrint">Print / PDF the sheets shown</button></div>';
-    h+='<div class="pn-sum" id="pnSum"></div><div id="pnDup"></div><div class="pn-tablewrap"><table class="pn-table"><thead><tr><th>Site · Floor · Room</th><th>Inspector</th><th>Date</th><th class="num">Answered</th><th class="num">✗</th><th>Status</th><th></th></tr></thead><tbody id="pnRows"></tbody></table></div>';
+    h+='<div class="pn-sum" id="pnSum"></div><div id="pnDup"></div><div class="pn-tablewrap"><table class="pn-table"><thead><tr><th>Site · Floor · Room · Stage</th><th>Inspector</th><th>Date</th><th class="num">Answered</th><th class="num">✗</th><th>Status</th><th></th></tr></thead><tbody id="pnRows"></tbody></table></div>';
     if(all)h+='<details class="pn-staff" id="pnStaff"><summary>Staff list (who may sign in and submit)</summary><div id="pnStaffBody"></div></details>';
     $('pnBody').innerHTML=h;
     let shown=[];
     const draw=()=>{
-      const q=$('pnQ').value.trim().toLowerCase(),s=$('pnS').value,si=$('pnSite').value,fl=$('pnFloor').value;
-      shown=rows.filter(r=>(!s||r.status===s)&&(!si||r.site===si)&&(!fl||r.floor===fl)&&(!q||[r.room,r.technician,r.email,r.site,r.floor].join(' ').toLowerCase().includes(q)));
-      $('pnRows').innerHTML=shown.map(r=>'<tr data-id="'+r.id+'"><td><strong>'+esc(r.room?'Room '+r.room:'(no room)')+'</strong><br><small>'+esc([r.site,r.floor].filter(Boolean).join(' · '))+'</small></td><td>'+esc(r.technician||'')+(all?'<br><small>'+esc(r.email||'')+'</small>':'')+'</td><td>'+esc(nzd(r.inspect_date))+'</td><td class="num">'+(+r.done||0)+' / '+(+r.total||0)+'</td><td class="num'+(r.fails?' fails':'')+'">'+(+r.fails||0)+'</td><td><span class="st st-'+r.status+'">'+(ST[r.status]||r.status)+'</span></td><td class="pn-act"><button type="button" class="btn btn-soft pn-open">Open</button>'+((all&&ts.role==='manager')||r.status==='draft'||r.status==='returned'?'<button type="button" class="btn btn-remove pn-del">Delete</button>':'')+'</td></tr>').join('')
+      const q=$('pnQ').value.trim().toLowerCase(),s=$('pnS').value,si=$('pnSite').value,fl=$('pnFloor').value,sg=$('pnStg').value;
+      shown=rows.filter(r=>(!s||r.status===s)&&(!sg||rowStage(r)===sg)&&(!si||r.site===si)&&(!fl||r.floor===fl)&&(!q||[r.room,r.technician,r.email,r.site,r.floor].join(' ').toLowerCase().includes(q)));
+      $('pnRows').innerHTML=shown.map(r=>'<tr data-id="'+r.id+'"><td><strong>'+esc(r.room?'Room '+r.room:'(no room)')+'</strong><br><small>'+esc([r.site,r.floor].filter(Boolean).join(' · '))+'</small><br><small>'+esc(rowForm(r)+' · '+(STAGES[rowStage(r)]?STAGES[rowStage(r)].en:'All stages'))+'</small></td><td>'+esc(r.technician||'')+(all?'<br><small>'+esc(r.email||'')+'</small>':'')+'</td><td>'+esc(nzd(r.inspect_date))+'</td><td class="num">'+(+r.done||0)+' / '+(+r.total||0)+'</td><td class="num'+(r.fails?' fails':'')+'">'+(+r.fails||0)+'</td><td><span class="st st-'+r.status+'">'+(ST[r.status]||r.status)+'</span></td><td class="pn-act"><button type="button" class="btn btn-soft pn-open">Open</button>'+((all&&ts.role==='manager')||r.status==='draft'||r.status==='returned'?'<button type="button" class="btn btn-remove pn-del">Delete</button>':'')+'</td></tr>').join('')
         ||'<tr><td colspan="7" class="note">No sheets match.</td></tr>';
       const w=shown.filter(r=>r.status==='submitted').length,fx=shown.reduce((a,r)=>a+(+r.fails||0),0);
       $('pnSum').textContent=shown.length+' sheet(s)'+(w?' · '+w+' waiting to be checked':'')+(fx?' · '+fx+' ✗ item(s) to follow up':'');
       /* the same room sent in twice is usually a typo in the room number */
       const seen={};shown.forEach(r=>{if(r.room){const k=roomKey(r);(seen[k]=seen[k]||[]).push(r)}});
       const dup=Object.values(seen).filter(a=>a.length>1);
-      $('pnDup').innerHTML=dup.length?'<div class="pn-dup">Same room on more than one sheet: '+dup.map(a=>esc([a[0].floor,'Room '+a[0].room].filter(Boolean).join(' '))+' ×'+a.length).join(', ')+'. Check the room numbers.</div>':'';
+      $('pnDup').innerHTML=dup.length?'<div class="pn-dup">Same room on more than one sheet: '+dup.map(a=>esc([a[0].floor,'Room '+a[0].room,STAGES[rowStage(a[0])]&&STAGES[rowStage(a[0])].en].filter(Boolean).join(' '))+' ×'+a.length).join(', ')+'. Check the room numbers.</div>':'';
       $('pnRows').querySelectorAll('.pn-del').forEach(b=>twoTap(b,'Tap again',async()=>{const id=b.closest('tr').dataset.id;
         try{await tsDelete(id);rows.splice(rows.findIndex(r=>r.id===id),1);draw()}catch(e){$('pnSum').textContent=netMsg(e);$('pnSum').classList.add('bad')}}))};
-    draw();['pnQ','pnS','pnSite','pnFloor'].forEach(id=>{$(id).oninput=draw;$(id).onchange=draw});
+    draw();['pnQ','pnS','pnSite','pnFloor','pnStg'].forEach(id=>{$(id).oninput=draw;$(id).onchange=draw});
     if(all)$('pnStaff').addEventListener('toggle',e=>{if(e.target.open)staffDraw()});
     $('pnRows').onclick=e=>{const tr=e.target.closest('tr[data-id]');if(tr&&e.target.closest('.pn-open'))openRecord(rows.find(r=>r.id===tr.dataset.id),all)};
     $('pnPrint').onclick=async()=>{
