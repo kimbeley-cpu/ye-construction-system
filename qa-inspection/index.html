@@ -93,7 +93,9 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
 .prog.done{background:var(--ok-tint);color:var(--ok)}
 .prog.bad{background:var(--danger-tint);color:var(--danger)}
 .qsec-q{display:flex;gap:6px;flex:1 1 100%}
-.qsec-q .btn{min-height:34px;padding:0 12px;font-size:13px;background:#fff;color:var(--deep);border:1px solid var(--line)}
+.qsec-q .btn{min-height:38px;padding:0 14px;font-size:13px;background:#fff;color:var(--deep);border:1px solid var(--line)}
+.qsec-q .btn.q-clear{margin-left:auto;color:var(--danger);border-color:#e2b4b4}
+.qsec-q .btn.q-clear.armed{background:var(--danger);border-color:var(--danger);color:#fff}
 .qnote{margin:0;padding:10px 14px;font-size:13px;font-weight:650;color:var(--amber);background:var(--amber-tint);border-bottom:1px solid var(--rule)}
 .qi{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--rule)}
 .qi:last-child{border-bottom:0}
@@ -290,7 +292,7 @@ body{background:#fff;font-size:12px}
 <div class="watermarks" aria-hidden="true"><img alt=""><img alt=""><img alt=""></div>
 
 <section class="section"><h2><span class="badge">1</span>Checklist 检查项目</h2>
-<p class="note">Tap ✓ when it is done, ✗ when there is a problem (say what is wrong), N/A when it does not apply to this room (add a note if useful). A section you have not reached yet can stay empty, but once you start a section, answer every item in it. To change an answer, tap a different one.<br>完成点 ✓，有问题点 ✗ 并写明原因，不适用点 N/A（可写备注）。还没做到的阶段可以留空，但开始的阶段必须每项都填。要改答案，直接点另一个选项。</p>
+<p class="note">Tap ✓ when it is done, ✗ when there is a problem (say what is wrong), N/A when it does not apply to this room (add a note if useful). A section you have not reached yet can stay empty, but once you start a section, answer every item in it. To change an answer, tap a different one. “Select all” ticks every item still empty; “Clear all” empties the whole section (tap it twice).<br>完成点 ✓，有问题点 ✗ 并写明原因，不适用点 N/A（可写备注）。还没做到的阶段可以留空，但开始的阶段必须每项都填。要改答案，直接点另一个选项。“全部选择”把还没填的项全部打 ✓；“全部取消”清空整段（要点两次）。</p>
 <div id="checklist"></div>
 </section>
 
@@ -534,13 +536,19 @@ function renderChecklist(){
   renderTplPick();
   const T=TPL[tpl];
   $('checklist').innerHTML=T.secs.map(s=>'<div class="qsec" id="sec-'+s.k+'" data-s="'+s.k+'"><div class="qsec-h"><h3>'+esc(s.t)+'<span class="zh">'+esc(s.zh)+'</span></h3><span class="prog"></span>'
-    +'<div class="qsec-q"><button type="button" class="btn" data-q="y">Rest ✓ 其余全部 ✓</button></div></div>'
+    +'<div class="qsec-q"><button type="button" class="btn" data-q="y">✓ Select all 全部选择</button><button type="button" class="btn q-clear">Clear all 全部取消</button></div></div>'
     +s.items.map(x=>isItem(x)
       ?'<div class="qi" id="qi-'+x[0]+'" data-k="'+x[0]+'"><div class="qi-t">'+esc(x[1])+'<span class="zh">'+esc(x[2])+'</span></div>'
         +'<div class="seg" role="group" aria-label="'+esc(x[1])+'"><button type="button" data-v="y" aria-label="Done">✓</button><button type="button" data-v="n" aria-label="Problem">✗</button><button type="button" data-v="na">N/A</button></div>'
         +'<input type="text" class="qi-why" placeholder="What is wrong? 问题说明" hidden></div>'
       :'<p class="qnote">'+esc(x.note)+' '+esc(x.zh)+'</p>').join('')+'</div>').join('');
   tplItems(tpl).forEach(([k])=>paintItem(k));
+  /* clearing a whole section takes two taps, so a stray touch can't wipe it */
+  $('checklist').querySelectorAll('.q-clear').forEach(b=>twoTap(b,'Tap again to clear 再点一次确认',()=>{
+    if(form.classList.contains('viewing'))return;
+    const s=TPL[tpl].secs.find(x=>x.k===b.closest('.qsec').dataset.s);
+    s.items.filter(isItem).forEach(([k])=>{delete ans[k];delete why[k];paintItem(k)});
+    TPL[tpl].secs.forEach(paintSec);renderCheck();sched()}));
   T.secs.forEach(paintSec);
   if(form.classList.contains('viewing'))lockChecklist(true);
 }
