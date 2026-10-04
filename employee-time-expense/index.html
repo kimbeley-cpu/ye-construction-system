@@ -754,7 +754,7 @@ async function openRecord(meta,asManager){
   try{
     const a=await tsFetch(TS_T+'?select=id,status,data,manager_note&id=eq.'+meta.id),row=a&&a[0];if(!row||!row.data)throw new Error('This record could not be opened.');
     if(!ts.view){clearTimeout(saveTimer);saveTimer=0;saveLocal();clearTimeout(ts.timer)}
-    ts.view={id:row.id,status:row.status,manager:!!asManager&&ts.role==='manager',meta};
+    ts.view={id:row.id,status:row.status,manager:ts.role==='manager'&&row.status!=='draft',all:!!asManager,meta};
     restore(row.data);lock(true,ts.view.manager);panelClose();viewBar();window.scrollTo(0,0)}
   catch(e){alert(netMsg(e))}}
 function viewBar(msg,bad){
@@ -774,7 +774,7 @@ async function viewAct(k){
       await tsFetch(TS_T+'?id=eq.'+v.id,{method:'PATCH',body:JSON.stringify({status:'returned',manager_note:n.trim()||'Please check and submit again.',approved_by:null,approved_at:null})});
       v.status='returned';viewBar('Returned to the employee.');return}
     if(k==='delete'){await tsFetch(TS_T+'?id=eq.'+v.id,{method:'DELETE'})}
-    const wasManager=v.manager;ts.view=null;lock(false);viewBar();
+    const wasManager=v.all;ts.view=null;lock(false);viewBar();
     const local=lsGet(KEY);if(local&&local.f)restore(local);else{restore({f:{},shifts:[],exp:[]});}
     tsBar();panelList(wasManager)}
   catch(e){viewBar(netMsg(e),true)}}
