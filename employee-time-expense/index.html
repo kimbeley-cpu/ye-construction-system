@@ -198,6 +198,12 @@ input.empty{color:transparent}
 .pn-staff summary{cursor:pointer;font-weight:700;color:var(--deep)}
 .pn-srow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);font-size:14px}
 .actions{flex-wrap:wrap}#submitBtn{flex:1 1 auto}@media(max-width:640px){#submitBtn{grid-column:1/-1}}
+.nzd{position:relative;display:block}
+.nzd input[type=date]{color:transparent!important;caret-color:transparent}
+.nzd input[type=date]::-webkit-datetime-edit{opacity:0}
+.nzd input[type=date].empty::before{content:none!important}
+.nzd-t{position:absolute;left:0;top:0;bottom:0;right:44px;display:flex;align-items:center;padding-left:14px;pointer-events:none;white-space:nowrap;overflow:hidden}
+.nzd-t.ph{color:var(--ph,#7b8a9d)}
 .viewing .btn-add,.viewing .btn-remove,.viewing .upload,.viewing .sig-actions,.viewing .sig-overlay,.viewing .thumb-x,.viewing .rcpt-btn,.viewing #resetBtn,.viewing .load,.viewing #saveFileBtn,.viewing #submitBtn,.viewing #saveStatus{display:none!important}
 .viewing input[readonly],.viewing textarea[readonly]{background:var(--tint2)}
 @media(max-width:640px){.cloudbar{border-radius:0;border-left:0;border-right:0;margin-bottom:0}}
@@ -304,7 +310,15 @@ const todayISO=()=>{const t=new Date();return t.getFullYear()+'-'+pad2(t.getMont
 const when=ts=>new Date(ts).toLocaleString('en-NZ',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
 const isImg=s=>typeof s==='string'&&/^data:image\/[a-z0-9.+-]+;base64,/i.test(s);
 const str=v=>typeof v==='string'?v:'';
-function syncEmpty(root){root.querySelectorAll('input[type=date],input[type=time]').forEach(i=>i.classList.toggle('empty',!i.value))}
+function nzShow(i){
+  if(i.type!=='date')return;
+  if(!i._nz){const w=document.createElement('span');w.className='nzd';i.parentNode.insertBefore(w,i);w.appendChild(i);
+    const s=document.createElement('span');s.className='nzd-t';w.appendChild(s);i._nz=s;
+    const open=()=>{if(i.readOnly||i.disabled)return;try{i.showPicker&&i.showPicker()}catch(e){}};
+    i.addEventListener('click',open);
+    i.addEventListener('keydown',e=>{if(e.key==='Tab')return;e.preventDefault();if(e.key==='Enter'||e.key===' ')open();if((e.key==='Backspace'||e.key==='Delete')&&!i.readOnly){i.value='';i.dispatchEvent(new Event('input',{bubbles:true}))}})}
+  i._nz.textContent=i.value?i.value.split('-').reverse().join('/'):(i.dataset.ph||'DD/MM/YYYY');i._nz.classList.toggle('ph',!i.value)}
+function syncEmpty(root){root.querySelectorAll('input[type=date],input[type=time]').forEach(i=>{i.classList.toggle('empty',!i.value);nzShow(i)})}
 function setStatus(m,bad){const s=$('saveStatus');s.textContent=m;s.classList.toggle('bad',!!bad)}
 
 /* Remove buttons need a second tap, so a stray touch can't delete an entry. */
@@ -573,7 +587,7 @@ function saveLocal(){
 function sched(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{saveTimer=0;save()},600)}
 ['input','change'].forEach(t=>form.addEventListener(t,e=>{
   const x=e.target;
-  if(x.matches&&x.matches('input[type=date],input[type=time]'))x.classList.toggle('empty',!x.value);
+  if(x.matches&&x.matches('input[type=date],input[type=time]')){x.classList.toggle('empty',!x.value);nzShow(x)}
   if(x.type!=='file')sched();
 }));
 window.addEventListener('pagehide',()=>{if(saveTimer){clearTimeout(saveTimer);saveTimer=0;save()}});
