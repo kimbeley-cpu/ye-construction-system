@@ -194,6 +194,8 @@ input.empty{color:transparent}
 .pn-table th{font-size:12px;color:var(--muted);background:var(--tint2)}
 .pn-table .num{text-align:right;white-space:nowrap}
 .pn-table .btn{min-height:36px;padding:0 12px;font-size:13px}
+.pn-act{white-space:nowrap;text-align:right}.pn-act .btn+.btn{margin-left:6px}.pn-sum.bad{color:var(--danger)}
+@media(max-width:640px){.pn-act .btn{display:block;width:100%}.pn-act .btn+.btn{margin:6px 0 0}}
 .pn-staff{margin-top:18px;background:#fff;border:1px solid var(--rule);border-radius:12px;padding:12px 14px}
 .pn-staff summary{cursor:pointer;font-weight:700;color:var(--deep)}
 .pn-srow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);font-size:14px}
@@ -592,13 +594,21 @@ function sched(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{saveTimer=0;s
 }));
 window.addEventListener('pagehide',()=>{if(saveTimer){clearTimeout(saveTimer);saveTimer=0;save()}});
 
-$('saveFileBtn').addEventListener('click',()=>{
+$('saveFileBtn').addEventListener('click',async()=>{
   clearTimeout(saveTimer);saveTimer=0;save();
   const nm=(el('employeeName').value||'record').trim().replace(/[^\w-]+/g,'_');
+  const name='YE_Time_Expense_'+nm+'_'+(el('periodEnd').value||todayISO())+'.json';
+  const blob=new Blob([JSON.stringify(collect(true))],{type:'application/json'});
+  /* let the person pick the folder where the browser supports it */
+  if(window.showSaveFilePicker){
+    try{const h=await window.showSaveFilePicker({suggestedName:name,types:[{description:'YE time and expense record',accept:{'application/json':['.json']}}]});
+      const w=await h.createWritable();await w.write(blob);await w.close();setStatus('Saved to file: '+h.name);return}
+    catch(e){if(e&&e.name==='AbortError')return}
+  }
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([JSON.stringify(collect(true))],{type:'application/json'}));
-  a.download='YE_Time_Expense_'+nm+'_'+(el('periodEnd').value||todayISO())+'.json';
+  a.href=URL.createObjectURL(blob);a.download=name;
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  setStatus('Saved to your Downloads folder: '+name);
 });
 $('loadInput').addEventListener('change',e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;
@@ -728,8 +738,10 @@ async function panelList(all){
     if(all)h+='<details class="pn-staff" id="pnStaff"><summary>Staff list (who may sign in and submit)</summary><div id="pnStaffBody"></div></details>';
     $('pnBody').innerHTML=h;
     const draw=()=>{const q=all?$('pnQ').value.trim().toLowerCase():'',s=all?$('pnS').value:'',list=rows.filter(r=>(!s||r.status===s)&&(!q||((r.employee||'')+' '+(r.email||'')).toLowerCase().includes(q)));
-      $('pnRows').innerHTML=list.map(r=>'<tr data-id="'+r.id+'"><td><strong>'+esc(r.employee||'(no name)')+'</strong>'+(all?'<br><small>'+esc(r.email||'')+'</small>':'')+'</td><td>'+esc(nzd(r.period_start))+' – '+esc(nzd(r.period_end))+'</td><td class="num">'+(+r.hours||0).toFixed(2)+'</td><td class="num">$'+(+r.expense||0).toFixed(2)+'</td><td><span class="st st-'+r.status+'">'+ST[r.status]+'</span></td><td><button type="button" class="btn btn-soft pn-open">Open</button></td></tr>').join('')||'<tr><td colspan="6" class="note">Nothing here yet.</td></tr>';
-      const w=list.filter(r=>r.status==='submitted').length;$('pnSum').textContent=list.length+' record(s) · '+list.reduce((a,r)=>a+(+r.hours||0),0).toFixed(2)+' hrs · $'+list.reduce((a,r)=>a+(+r.expense||0),0).toFixed(2)+' expenses'+(all&&w?' · '+w+' waiting for approval':'')};
+      $('pnRows').innerHTML=list.map(r=>'<tr data-id="'+r.id+'"><td><strong>'+esc(r.employee||'(no name)')+'</strong>'+(all?'<br><small>'+esc(r.email||'')+'</small>':'')+'</td><td>'+esc(nzd(r.period_start))+' – '+esc(nzd(r.period_end))+'</td><td class="num">'+(+r.hours||0).toFixed(2)+'</td><td class="num">$'+(+r.expense||0).toFixed(2)+'</td><td><span class="st st-'+r.status+'">'+ST[r.status]+'</span></td><td class="pn-act"><button type="button" class="btn btn-soft pn-open">Open</button>'+(ts.role==='manager'?'<button type="button" class="btn btn-remove pn-del">Delete</button>':'')+'</td></tr>').join('')||'<tr><td colspan="6" class="note">Nothing here yet.</td></tr>';
+      const w=list.filter(r=>r.status==='submitted').length;$('pnSum').textContent=list.length+' record(s) · '+list.reduce((a,r)=>a+(+r.hours||0),0).toFixed(2)+' hrs · $'+list.reduce((a,r)=>a+(+r.expense||0),0).toFixed(2)+' expenses'+(all&&w?' · '+w+' waiting for approval':'');
+      $('pnRows').querySelectorAll('.pn-del').forEach(b=>twoTap(b,'Tap again',async()=>{const id=b.closest('tr').dataset.id;
+        try{await tsDelete(id);rows.splice(rows.findIndex(r=>r.id===id),1);draw()}catch(e){$('pnSum').textContent=netMsg(e);$('pnSum').classList.add('bad')}}))};
     draw();if(all){$('pnQ').oninput=draw;$('pnS').onchange=draw;$('pnStaff').addEventListener('toggle',e=>{if(e.target.open)staffDraw()})}
     $('pnRows').onclick=e=>{const tr=e.target.closest('tr[data-id]');if(tr&&e.target.closest('.pn-open'))openRecord(rows.find(r=>r.id===tr.dataset.id),all)}}
   catch(e){$('pnBody').innerHTML='<p class="note bad">'+esc(netMsg(e))+'</p>'}}
@@ -742,6 +754,10 @@ async function staffDraw(){
     box.querySelectorAll('[data-e]').forEach(b=>twoTap(b,'Tap again to remove',async()=>{try{await tsFetch('/rest/v1/ye_staff?email=eq.'+encodeURIComponent(b.dataset.e),{method:'DELETE'});staffDraw()}catch(e){$('stMsg').textContent=netMsg(e)}}))}
   catch(e){box.innerHTML='<p class="note bad">'+esc(netMsg(e))+'</p>'}}
 
+async function tsDelete(id){
+  const a=await tsFetch(TS_T+'?id=eq.'+id+'&select=id',{method:'DELETE',prefer:'return=representation'});
+  if(!a||!a.length)throw new Error('The office server did not delete this record. This account may not have permission.');
+  if(id===ts.cur){ts.cur=null;lsSet('ye_ts_cur',null)}}
 /* viewing a submitted record (read-only for staff, approval for managers) */
 function lock(on,manager){
   form.classList.toggle('viewing',on);
@@ -773,7 +789,7 @@ async function viewAct(k){
     if(k==='return'){const n=prompt('Tell the employee what to fix. They will see this note.');if(n===null)return;
       await tsFetch(TS_T+'?id=eq.'+v.id,{method:'PATCH',body:JSON.stringify({status:'returned',manager_note:n.trim()||'Please check and submit again.',approved_by:null,approved_at:null})});
       v.status='returned';viewBar('Returned to the employee.');return}
-    if(k==='delete'){await tsFetch(TS_T+'?id=eq.'+v.id,{method:'DELETE'})}
+    if(k==='delete'){await tsDelete(v.id)}
     const wasManager=v.all;ts.view=null;lock(false);viewBar();
     const local=lsGet(KEY);if(local&&local.f)restore(local);else{restore({f:{},shifts:[],exp:[]});}
     tsBar();panelList(wasManager)}
