@@ -1,22 +1,30 @@
 # YE Construction JSA / TA
 
-Open `/safety/?lang=zh` or `/safety/?lang=en`. Uses the existing company logo and staff sign-in gate. No build step or additional service is required.
+Open `/safety/` (add `?lang=zh` or `?lang=en` to choose the language). Uses the company logo and the staff sign-in gate. No build step.
+
+## Setup (once)
+
+Run `safety/supabase-setup.sql` in Supabase → SQL Editor. It creates `ye_jsa_records` and `ye_jsa_signatures` and reuses the existing `ye_members` / `ye_staff` lists.
 
 ## Use
 
-1. Enter project, scope and emergency information.
-2. Select actual work groups. Adapt steps, hazards and controls to the site; add extra steps as required. Site edits appear verbatim in both languages, so use bilingual text or an interpreter.
-3. Complete owners and initial/residual scores using the labelled example matrix. It is not an official Site Safe matrix. High/critical residual risk blocks signing.
-4. Confirm the site briefing and responsible person review. Workers enter their own details and draw their own signature.
-5. Export the record and print/save PDF in each language for filing. Signing locks the analysis. New revision clears acknowledgements/signatures and automatically downloads the old signed revision first.
+1. Open **JSA / TA records**, then **New JSA / TA** (or open an existing site record). Everything is saved to the company server automatically and follows you to other devices.
+2. Enter project, scope and emergency information. Select the actual work groups, adapt steps, hazards and controls to the site, and add extra steps as required. Site edits appear verbatim in both languages, so use bilingual text or an interpreter.
+3. Complete owners and initial/residual scores using the labelled example matrix (not an official Site Safe matrix). High/critical residual risk blocks signing.
+4. Confirm the site briefing and responsible person review.
+5. Each worker opens the same record on their own phone, enters their details, taps **Tap here to sign**, signs, taps **Done**, then **Confirm & save signature**.
+6. Export the record and print/save PDF in each language for filing.
 
-## Storage and limits
+## Who can do what
 
-- This first version saves one current record in this browser's local storage. It does not sync to Supabase or other devices. Export and file signed records before changing projects, clearing browser data or using a shared device.
-- JSON exports include both declarations, resolved Chinese/English analysis, risk ratings, signatures and version. There is no JSON import UI in this release.
-- Signatures are drawn acknowledgements, not certified digital signatures. Local records can be altered outside this UI; there is no server-side audit trail or identity verification for each worker. Staff sign-in protects the tool's ordinary UI, not locally downloaded files.
-- Reviewer name and checkboxes record a declaration, not independently verified approval or professional competency.
+- Any staff or office account can open every record and add their own signature.
+- Only the person who created a record, or an office account, can edit or delete it.
+- When anyone has signed, the content is locked on the server. **New revision** keeps the analysis, clears the briefing confirmations and starts a fresh signature list; earlier signatures stay as history, and the signed revision is downloaded first.
+- A record with signatures cannot be deleted by its creator; signatures cannot be edited, and only office accounts can delete one.
+
+## Limits
+
+- Signatures are drawn acknowledgements, not certified digital signatures. Reviewer name and checkboxes record a declaration, not independently verified approval.
+- If two people edit the same unsigned record at once, the last save wins.
+- JSON exports include both declarations, resolved Chinese/English analysis, risk ratings, signatures and version. There is no JSON import.
 - This is a planning template, not an approved site assessment, legal certification or substitute for permits/licences. Separate assessment is needed for uncovered high-risk work.
-- Third-party company names, worker details and signatures have not been copied into this template. Source photos are not uploaded.
-
-Reference check: 5 October 2026. Reference links are shown in the page.

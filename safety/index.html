@@ -12,10 +12,16 @@
 <script src="app.js" defer></script>
 </head>
 <body>
-<div class="toolbar"><a href="../">← YE Construction</a><div><button id="zh" type="button">中文</button><button id="en" type="button">English</button><button id="print" type="button"></button><button id="export" type="button"></button><button id="revision" type="button"></button></div></div>
-<main>
+<div class="toolbar"><a href="../">← YE Construction</a><div><button id="backList" type="button" class="edit-only"></button><button id="zh" type="button">中文</button><button id="en" type="button">English</button><button id="print" type="button" class="edit-only"></button><button id="export" type="button" class="edit-only"></button><button id="revision" type="button" class="edit-only"></button></div></div>
+<main id="listMain">
+<header><img src="../assets/logo.png" width="1612" height="540" alt="YE Construction"><div class="eyebrow">SITE SAFETY / YE CONSTRUCTION</div><h1 id="listTitle"></h1><p id="listSub"></p></header>
+<section><div class="listbar"><input id="listFilter" type="search" autocomplete="off"><button id="newRec" type="button" class="primary"></button><button id="refreshList" type="button"></button></div><p id="listStatus" role="status" class="muted"></p><div id="records"></div></section>
+<footer>YE Construction · yeconstruction.co.nz · YE-HS-001</footer>
+</main>
+<main id="editMain" hidden>
 <header><img src="../assets/logo.png" width="1612" height="540" alt="YE Construction"><div class="eyebrow">SITE SAFETY / YE CONSTRUCTION</div><h1 id="title"></h1><p id="subtitle"></p><div class="meta"><span>YE-HS-001</span><span id="version"></span><span id="status"></span></div></header>
 <p id="saveStatus" role="status" class="storage"></p>
+<p id="roNote" class="notice" hidden></p>
 <p id="notice" class="notice"></p>
 <fieldset id="documentFields"><legend class="sr-only">JSA / TA</legend>
 <section><h2 id="projectTitle"></h2><div id="projectFields" class="fields"></div></section>
