@@ -31,6 +31,10 @@ a.card:focus-visible{box-shadow:0 0 0 3px rgba(53,109,183,.35)}
 .card b{font-size:18px;color:var(--deep)}
 .card span{font-size:13px;color:var(--mute);line-height:1.45}
 .card em{margin-top:auto;font-style:normal;font-size:13px;font-weight:700;color:var(--blue)}
+.who{display:flex;justify-content:flex-end;align-items:center;gap:12px;flex-wrap:wrap;margin:-14px 4px 18px;font-size:13px;color:var(--mute)}
+.who strong{color:var(--ink)}
+.who button,.who a{font:inherit;font-size:13px;font-weight:700;padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--deep);cursor:pointer;text-decoration:none}
+.who button:hover,.who a:hover{background:#e8eef7}
 .note{margin:14px 4px 0;font-size:12px;color:var(--mute)}
 footer{text-align:center;font-size:12px;color:var(--mute);padding:18px 16px 26px}
 @media(max-width:720px){.grid{grid-template-columns:1fr}a.card{min-height:0}}
@@ -40,6 +44,7 @@ footer{text-align:center;font-size:12px;color:var(--mute);padding:18px 16px 26px
 <body>
 <div class="top"></div>
 <main>
+  <div class="who" id="who" hidden></div>
   <div class="brand">
     <img src="assets/logo.png" alt="YE Construction" width="1612" height="540">
     <p>New Zealand</p>
@@ -71,5 +76,26 @@ footer{text-align:center;font-size:12px;color:var(--mute);padding:18px 16px 26px
   <p class="note">Sign-in required. 需要登录后使用。</p>
 </main>
 <footer>© YE Construction · yeconstruction.co.nz</footer>
+<script>
+/* Home-page sign-in status and one Sign out for all systems (same session keys as assets/gate.js) */
+(function(){
+  var URL_='https://fkyuhthxfzhqmlikbrfg.supabase.co',KEY='sb_publishable_zbPzA78u7V3htYulP1b9_w_53KQFKHn';
+  var box=document.getElementById('who');
+  function get(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
+  function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function draw(){
+    var s=get('ye_ts_ses');box.hidden=false;
+    if(s&&s.access_token){
+      box.innerHTML='<span>Signed in as <strong>'+esc(s.email||'')+'</strong> · 已登录</span><button type="button" id="yeOut">Sign out · 登出</button>';
+      document.getElementById('yeOut').onclick=function(){
+        if(!confirm('Sign out on this device? 确定在这台设备上登出吗？'))return;
+        try{fetch(URL_+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+s.access_token},keepalive:true}).catch(function(){})}catch(e){}
+        ['ye_ts_ses','ye_gate_ok','ye_gate_since','ye_ts_cur'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
+        draw()}
+    }else box.innerHTML='<span>Not signed in · 未登录</span><a href="timesheet/">Sign in · 登录</a>'}
+  draw();
+  window.addEventListener('storage',draw);
+})();
+</script>
 </body>
 </html>
