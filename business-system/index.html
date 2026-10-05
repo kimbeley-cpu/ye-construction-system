@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8">
+<script src="../assets/gate.js" data-need="manager" data-app="the Business System"></script><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Business System"><meta name="application-name" content="Business System"><meta name="theme-color" content="#ffffff"><link rel="icon" type="image/png" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/icon-180.png"><link rel="manifest" href="manifest.webmanifest"><title>YE Construction Business System v13</title>
 <style>
 :root{--blue:#356db7;--deep:#24477f;--orange:#ef7c27;--ink:#172033;--line:#d8dee9;--bg:#edf2f7}
@@ -298,13 +299,13 @@ function clScan(){let m=clAll(),sh=cl.st.sh,now=Date.now();
   for(let k in sh){if(!m[k]&&!sh[k].del&&k.indexOf('job:')===0){if(sh[k].t){sh[k].del=1;sh[k].d=1;sh[k].m=now}else delete sh[k]}}
   return m}
 async function clErr(r){let t='';try{let j=await r.json();t=j.msg||j.message||j.error_description||j.error||''}catch{}return new Error((t||'Request failed')+' ('+r.status+')')}
-function clSetSes(j,email){cl.ses={access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000,email:(j.user&&j.user.email)||email||(cl.ses&&cl.ses.email)||''};clPut('yeCloudSes',cl.ses)}
+function clSetSes(j,email){cl.ses={access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000,email:(j.user&&j.user.email)||email||(cl.ses&&cl.ses.email)||'',uid:(j.user&&j.user.id)||(cl.ses&&cl.ses.uid)||''};clPut('ye_ts_ses',cl.ses)}
 async function clAuth(kind,email,pw){
   let r=await fetch(CL_URL+'/auth/v1/'+(kind==='signup'?'signup':'token?grant_type=password'),{method:'POST',headers:{apikey:CL_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
   if(!r.ok)throw await clErr(r);let j=await r.json();if(!j.access_token)return false;clSetSes(j,email);return true}
-async function clRefresh(force){if(!cl.ses)return;if(!force&&cl.ses.exp-Date.now()>120000)return;
+async function clRefresh(force){if(!cl.ses)return;{let o=clGet('ye_ts_ses');if(o&&o.refresh_token&&o.refresh_token!==cl.ses.refresh_token){cl.ses=o;force=false}}if(!force&&cl.ses.exp-Date.now()>120000)return;
   let r=await fetch(CL_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:CL_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:cl.ses.refresh_token})});
-  if(!r.ok){if([400,401,403].includes(r.status)){cl.ses=null;clPut('yeCloudSes',null);throw new Error(L('Signed out — please sign in again','登录已过期，请重新登录'))}throw await clErr(r)}
+  if(!r.ok){if([400,401,403].includes(r.status)){cl.ses=null;localStorage.removeItem('ye_ts_ses');throw new Error(L('Signed out — please sign in again','登录已过期，请重新登录'))}throw await clErr(r)}
   clSetSes(await r.json())}
 async function clFetch(path,opt,retried){opt=opt||{};let h={apikey:CL_KEY,Authorization:'Bearer '+cl.ses.access_token};
   if(opt.body)h['Content-Type']='application/json';if(opt.prefer)h.Prefer=opt.prefer;
@@ -386,11 +387,11 @@ function clLogin(kind){return async()=>{let em=$('clE').value.trim(),pw=$('clP')
     if(!ok){$('clMsg').textContent=L('Account created. Check your inbox to confirm the email, then press Sign in.','注册成功，请先去邮箱点确认链接，再回来按「登录」。');return}
     $('clP').value='';cl.err='';cl.member=null;clShow();clSync()}
   catch(e){$('clMsg').textContent=(e instanceof TypeError)?L('Cannot reach the cloud. Check your network.','连不上云端，请检查网络'):L('Failed: ','失败：')+e.message}}}
-function clSignOut(){cl.ses=null;cl.member=null;clPut('yeCloudSes',null);cl.err='';cl.hold=null;clShow()}
+function clSignOut(){cl.ses=null;cl.member=null;localStorage.removeItem('ye_ts_ses');cl.err='';cl.hold=null;clShow()}
 function clInit(){
   $('clLi').onclick=clLogin('password');$('clSu').onclick=clLogin('signup');$('clNow').onclick=()=>clSync();$('clOut').onclick=clSignOut;$('clX').onclick=clClose;
   $('clHd').onclick=()=>{cl.okDel=true;clSync()};$('clHr').onclick=()=>{(cl.hold||[]).forEach(k=>delete cl.st.sh[k]);cl.st.cur='';cl.hold=null;clSync()};
-  cl.ses=clGet('yeCloudSes');let st=clGet('yeCloudSt');if(st&&st.sh)cl.st=st;clShow();if(cl.ses)clSync();
+  cl.ses=clGet('ye_ts_ses');let st=clGet('yeCloudSt');if(st&&st.sh)cl.st=st;clShow();if(cl.ses)clSync();
   document.addEventListener('input',()=>{clLastInput=Date.now()});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&cl.ses)clTouch()});
   setInterval(()=>{if(cl.ses&&!document.hidden&&navigator.onLine!==false)clSync()},60000)}
