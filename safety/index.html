@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<script src="../assets/gate.js" data-need="staff" data-app="JSA / TA Safety"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#24477f">
+<link rel="icon" href="../icons/icon-192.png">
+<title>JSA / TA · YE Construction</title>
+<link rel="stylesheet" href="style.css">
+<script src="data.js" defer></script>
+<script src="app.js" defer></script>
+</head>
+<body>
+<div class="toolbar"><a href="../">← YE Construction</a><div><button id="zh" type="button">中文</button><button id="en" type="button">English</button><button id="print" type="button"></button><button id="export" type="button"></button><button id="revision" type="button"></button></div></div>
+<main>
+<header><img src="../assets/logo.png" width="1612" height="540" alt="YE Construction"><div class="eyebrow">SITE SAFETY / YE CONSTRUCTION</div><h1 id="title"></h1><p id="subtitle"></p><div class="meta"><span>YE-HS-001</span><span id="version"></span><span id="status"></span></div></header>
+<p id="saveStatus" role="status" class="storage"></p>
+<p id="notice" class="notice"></p>
+<fieldset id="documentFields"><legend class="sr-only">JSA / TA</legend>
+<section><h2 id="projectTitle"></h2><div id="projectFields" class="fields"></div></section>
+<section><h2 id="scopeTitle"></h2><p id="scopeText"></p><div id="tasks" class="chips"></div><p id="scopeNote" class="muted"></p></section>
+<section><h2 id="riskTitle"></h2><p id="riskIntro"></p><div id="matrix" class="table-scroll"></div><p id="hierarchy" class="hierarchy"></p></section>
+<section><h2 id="analysisTitle"></h2><p id="analysisNote" class="muted"></p><div id="analysis"></div><button id="addStep" type="button"></button></section>
+<section><h2 id="ppeTitle"></h2><div id="ppe" class="chips"></div><h3 id="chemicalTitle"></h3><p id="chemicalNote"></p><div id="chemicals" class="fields"></div></section>
+<section><h2 id="briefingTitle"></h2><div id="checks" class="checklist"></div><div id="briefFields" class="fields"></div></section>
+</fieldset>
+<section><h2 id="signTitle"></h2><p id="declaration" class="declaration"></p><p id="signNotice" class="muted"></p><div id="signedWorkers"></div><form id="signForm"><div id="workerFields" class="fields"></div><label class="check"><input id="ack" type="checkbox" required><span id="ackText"></span></label><label for="signature" id="signatureLabel"></label><canvas id="signature" width="900" height="220" aria-label="Handwritten signature" tabindex="0"></canvas><div class="actions"><button id="clearSignature" type="button"></button><button id="sign" class="primary" type="submit"></button></div><p id="signError" role="alert"></p></form></section>
+<section class="sources"><h2 id="sourcesTitle"></h2><p id="sourceNote"></p><a href="https://www.sitesafe.org.nz/health-safety/managing-hazards-and-risk/task-analysis/" target="_blank" rel="noopener">Site Safe — Task analysis</a><a href="https://www.worksafe.govt.nz/topic-and-industry/working-at-height/working-at-height-in-nz/" target="_blank" rel="noopener">WorkSafe — Working at height</a><a href="https://www.worksafe.govt.nz/managing-health-and-safety/businesses/worker-engagement-and-participation/good-practice-for-worker-engagement-participation-and-representation/" target="_blank" rel="noopener">WorkSafe — Worker engagement</a></section>
+<footer>YE Construction · yeconstruction.co.nz · YE-HS-001 <span id="footerRevision"></span></footer>
+</main>
+</body>
+</html>
