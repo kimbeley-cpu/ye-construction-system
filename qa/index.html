@@ -1,4 +1,5 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<script src="../assets/gate.js" data-need="staff" data-app="QA Inspection"></script><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="QA Inspection"><meta name="application-name" content="QA Inspection"><meta name="theme-color" content="#ffffff"><link rel="icon" type="image/png" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/icon-180.png"><link rel="manifest" href="manifest.webmanifest"><title>QA Inspection | Plumbing Quality Assurance Sheet</title>
 <style>
 :root{--ink:#172033;--deep:#24477f;--blue:#356db7;--tint:#eef3fa;--tint2:#f7f9fc;--line:#cdd8e6;--rule:#e3e9f1;--muted:#5b6b80;--ph:#7b8a9d;--danger:#a92d2d;--danger-tint:#fbeeee;--ok:#1d6b35;--ok-tint:#e2f4e6;--amber:#7a4b00;--amber-tint:#fff3d6;--r:10px}
@@ -952,7 +953,7 @@ async function tsAuth(email,pw){
   const r=await fetch(TS_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:TS_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
   if(!r.ok)throw await tsErr(r);const j=await r.json();if(!j.access_token)return false;tsSetSes(j,email);return true}
 async function tsRefresh(force){
-  if(!ts.ses)return;if(!force&&ts.ses.exp-Date.now()>120000)return;
+  if(!ts.ses)return;{const o=lsGet('ye_ts_ses');if(o&&o.refresh_token&&o.refresh_token!==ts.ses.refresh_token){ts.ses=o;force=false}}if(!force&&ts.ses.exp-Date.now()>120000)return;
   const r=await fetch(TS_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:TS_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:ts.ses.refresh_token})});
   if(!r.ok){if([400,401,403].includes(r.status)){tsSignOut(true);throw new Error('Your sign-in has expired. Please sign in again.')}throw await tsErr(r)}
   tsSetSes(await r.json())}
