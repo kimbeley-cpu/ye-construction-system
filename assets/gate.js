@@ -101,7 +101,7 @@
       if(role==='none'){go.disabled=false;say('');document.getElementById('ygMsg').innerHTML=NO_STAFF;return}
       set(SES,s);set(OK,{email:s.email,role:role,at:Date.now()});set(SINCE,Date.now());
       if(!allowed(role)){show('denied',NO_OFFICE);return}
-      location.reload();
+      location.href=base;
     }catch(e){go.disabled=false;say(e instanceof TypeError?'Cannot reach the server. Check your connection. 连不上服务器，请检查网络。':(e&&e.message)||'Sign-in failed. 登录失败。')}
   }
 
