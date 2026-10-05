@@ -8,7 +8,7 @@
    this gate keeps the tools themselves closed to people who are not signed in. */
 (function(){
   var URL_='https://fkyuhthxfzhqmlikbrfg.supabase.co',KEY='sb_publishable_zbPzA78u7V3htYulP1b9_w_53KQFKHn';
-  var SES='ye_ts_ses',OK='ye_gate_ok',RECHECK=6*3600*1000;
+  var SES='ye_ts_ses',OK='ye_gate_ok',SINCE='ye_gate_since',RECHECK=6*3600*1000,KEEP=7*24*3600*1000;
   var me=document.currentScript,need=(me&&me.getAttribute('data-need'))||'staff',app=(me&&me.getAttribute('data-app'))||'this system';
   var base=me?me.src.replace(/assets\/gate\.js.*$/,''):'/';
   var root=document.documentElement,locked=false,box=null,pending=null;
@@ -31,11 +31,25 @@
    +'#yeGate button:disabled{opacity:.6;cursor:default}#yeGate button.yg-alt{background:#e8eef7;color:#24477f;margin-top:10px}'
    +'#yeGate .yg-msg{min-height:20px;margin:12px 0 0;font-size:13px;line-height:1.5;color:#b3261e;text-align:center}#yeGate .yg-msg.ok{color:#5d6b82}'
    +'#yeGate .yg-foot{font-size:12px;color:#5d6b82;text-align:center;margin:16px 0 0;line-height:1.6}#yeGate a{color:#356db7}'
-   +'@media print{html.ye-locked body{display:none!important}}';
+   +'#yeNav{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#13243d;font-family:Arial,"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;position:relative;z-index:5}'
+   +'#yeNav a,#yeNav button{font:inherit;font-size:14px;font-weight:700;line-height:1;min-height:36px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border:1px solid #31445f;border-radius:8px;background:#1d3250;color:#fff;text-decoration:none;cursor:pointer;margin:0;width:auto}'
+   +'#yeNav a:hover,#yeNav button:hover{background:#27426a}#yeNav a:focus-visible,#yeNav button:focus-visible{outline:2px solid #62a0db;outline-offset:1px}'
+   +'#yeNav span{margin-left:auto;font-size:12px;color:#b9c7dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}'
+   +'@media print{html.ye-locked body{display:none!important}#yeNav{display:none!important}}';
   (document.head||root).appendChild(css);
 
   function lock(){locked=true;root.classList.add('ye-locked')}
-  function unlock(){locked=false;root.classList.remove('ye-locked');if(box){box.remove();box=null}}
+  function unlock(){locked=false;root.classList.remove('ye-locked');if(box){box.remove();box=null}whenBody(nav)}
+  /* Back and Home on every system page (an installed home-screen app has no browser buttons) */
+  function nav(){
+    if(document.getElementById('yeNav'))return;var n=document.createElement('div');n.id='yeNav';
+    n.innerHTML='<button type="button" id="yeBack">← Back · 返回</button><a href="'+base+'">⌂ Home · 主页</a><span>'+app.replace(/^the /,'')+'</span>';
+    document.body.insertBefore(n,document.body.firstChild);
+    document.getElementById('yeBack').onclick=function(){var here=location.href,same=false;try{same=!!document.referrer&&new URL(document.referrer).origin===location.origin}catch(e){}
+      if(same&&history.length>1){history.back();setTimeout(function(){if(location.href===here&&!document.hidden)location.href=base},600)}else location.href=base}}
+  function expired(){var t=+get(SINCE)||0;return !t||Date.now()-t>KEEP}
+  var EXP7='For security you need to sign in again every 7 days.<br>为了安全，每 7 天需要重新登录一次。';
+  function endSession(msg){set(SES,null);set(OK,null);set(SINCE,null);show('login',msg)}
   function whenBody(fn){if(document.body)fn();else document.addEventListener('DOMContentLoaded',fn)}
   function show(view,msg){lock();pending={view:view,msg:msg};whenBody(render)}
   function render(){
@@ -46,7 +60,7 @@
     if(v==='wait'){box.innerHTML=head+'<p class="yg-msg ok" role="status">Checking your sign-in… 正在确认登录…</p>'+foot;return}
     if(v==='denied'){
       box.innerHTML=head+'<h1>No access · 无权限</h1><p class="yg-msg" role="alert">'+msg+'</p><button type="button" class="yg-alt" id="ygOther">Sign in with another account · 换一个账号登录</button>'+foot;
-      document.getElementById('ygOther').onclick=function(){set(SES,null);set(OK,null);show('login')};return}
+      document.getElementById('ygOther').onclick=function(){endSession()};return}
     box.innerHTML=head+'<h1>Staff sign-in · 员工登录</h1><p class="yg-sub">Sign in with your company account to open '+app+'.<br>请用公司账号登录后使用。</p>'
       +'<form id="ygForm" novalidate><label for="ygE">Email · 邮箱</label><input type="email" id="ygE" autocomplete="username" autocapitalize="none" spellcheck="false" required>'
       +'<label for="ygP">Password · 密码</label><input type="password" id="ygP" autocomplete="current-password" required>'
@@ -85,7 +99,7 @@
         throw new Error((t||'Sign-in failed')+' ('+r.status+')')}
       var s=toSes(await r.json(),em),role=await roleOf(s);
       if(role==='none'){go.disabled=false;say('');document.getElementById('ygMsg').innerHTML=NO_STAFF;return}
-      set(SES,s);set(OK,{email:s.email,role:role,at:Date.now()});
+      set(SES,s);set(OK,{email:s.email,role:role,at:Date.now()});set(SINCE,Date.now());
       if(!allowed(role)){show('denied',NO_OFFICE);return}
       location.reload();
     }catch(e){go.disabled=false;say(e instanceof TypeError?'Cannot reach the server. Check your connection. 连不上服务器，请检查网络。':(e&&e.message)||'Sign-in failed. 登录失败。')}
@@ -104,7 +118,7 @@
       if(!allowed(role)){show('denied',denyMsg(role));return}
       if(wrote)location.reload();else unlock();
     }catch(e){
-      if(e&&e.auth){set(SES,null);set(OK,null);show('login','Your sign-in has expired. Please sign in again. 登录已过期，请重新登录。')}
+      if(e&&e.auth)endSession('Your sign-in has expired. Please sign in again. 登录已过期，请重新登录。')
       else show('login',e instanceof TypeError?'Cannot reach the server to confirm your sign-in. Check your connection and try again. 连不上服务器，无法确认登录，请检查网络后重试。':(e&&e.message)||'')}
   }
   /* already confirmed on this device: stay open, quietly re-confirm the staff list now and then */
@@ -115,13 +129,14 @@
 
   function check(){
     var s=get(SES),ok=get(OK);
-    if(!s||!s.access_token||!s.refresh_token){set(OK,null);show('login');return}
+    if(!s||!s.access_token||!s.refresh_token){set(OK,null);set(SINCE,null);show('login');return}
+    if(expired()){endSession(EXP7);return}
     if(ok&&ok.email&&ok.email===s.email){
       if(!allowed(ok.role)){show('denied',denyMsg(ok.role));return}
-      recheck(s,ok);return}
+      whenBody(nav);recheck(s,ok);return}
     confirm_(s)}
   check();
   /* signing out inside a system (or in another tab) closes the gate again */
-  setInterval(function(){if(!locked&&!get(SES)){set(OK,null);show('login')}},1500);
+  setInterval(function(){if(locked)return;if(!get(SES)){set(OK,null);set(SINCE,null);show('login')}else if(expired())endSession(EXP7)},1500);
   window.addEventListener('storage',function(e){if(e.key===SES&&!e.newValue&&!locked){set(OK,null);show('login')}});
 })();
