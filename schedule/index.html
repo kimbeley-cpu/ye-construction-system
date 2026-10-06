@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<script src="../assets/gate.js" data-need="staff" data-app="Schedule · 日程表"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#24477f">
+<link rel="icon" href="../icons/icon-192.png">
+<title>Schedule · 日程表 · YE Construction</title>
+<style>
+:root{--blue:#356db7;--deep:#24477f;--sky:#62a0db;--ink:#172033;--mute:#5d6b82;--line:#d8dee9;--bg:#f4f7fb;--red:#c62828;--redbg:#fdecec;--redbg2:#f9d6d6;--green:#1f7a4d;--greenbg:#e5f4ec}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg)}
+.top{height:6px;background:linear-gradient(90deg,var(--deep) 0 34%,var(--blue) 34% 67%,var(--sky) 67%)}
+main{max-width:1100px;margin:0 auto;padding:14px 12px 40px}
+h1{font-size:20px;color:var(--deep);margin:4px 0 2px}
+.sub{font-size:13px;color:var(--mute);margin:0 0 12px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.bar .sp{flex:1}
+button,select,input,textarea{font:inherit;font-size:15px}
+button{min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--deep);font-weight:700;cursor:pointer}
+button:hover{background:#e8eef7}
+button.pri{background:var(--blue);border-color:var(--blue);color:#fff}button.pri:hover{background:var(--deep)}
+button.dng{color:var(--red)}
+button.on{background:var(--deep);color:#fff;border-color:var(--deep)}
+select{min-height:38px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.month{font-size:18px;font-weight:700;min-width:150px;text-align:center}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
+.card h2{font-size:15px;margin:0 0 8px;color:var(--deep)}
+.msg{font-size:13px;color:var(--mute);min-height:18px}.msg.bad{color:var(--red)}
+/* pool */
+.pool .it{display:flex;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:8px 0}
+.pool .it:first-of-type{border-top:0}
+.pool .it .t{min-width:0}
+.pool .none{font-size:13px;color:var(--mute)}
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.dow{background:var(--deep);color:#fff;text-align:center;font-size:13px;font-weight:700;padding:7px 0}
+.dow.we{background:var(--red)}
+.cell{min-height:104px;border-top:1px solid var(--line);border-left:1px solid var(--line);padding:4px;cursor:pointer;position:relative;overflow:hidden;background:#fff}
+.cell:nth-child(7n+8){border-left:0}
+.cell.out{background:#f1f3f7}.cell.out .n{opacity:.45}
+.cell.we{background:var(--redbg)}
+.cell.hol{background:var(--redbg2)}
+.cell.we .n,.cell.hol .n{color:var(--red)}
+.cell.today .n{background:var(--blue);color:#fff;border-radius:50%}
+.cell.sel{outline:3px solid var(--sky);outline-offset:-3px}
+.n{display:inline-block;min-width:24px;height:24px;line-height:24px;text-align:center;font-size:14px;font-weight:700}
+.hn{font-size:11px;font-weight:700;color:var(--red);line-height:1.25;margin:1px 0 2px;word-break:break-word}
+.chip{display:block;font-size:11.5px;line-height:1.3;padding:2px 5px;margin:2px 0;border-radius:4px;border-left:3px solid var(--blue);background:#e8eef7;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip.job{border-left-color:var(--deep);background:#dde7f6}
+.chip.me{border-left-color:var(--green);background:var(--greenbg)}
+.more{font-size:11px;color:var(--mute)}
+.dots{display:none;gap:3px;flex-wrap:wrap;margin-top:2px}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--green);display:block}
+.dots i.job{background:var(--deep)}
+/* day panel + list */
+.ev{border-left:4px solid var(--green);background:#fff;border-radius:8px;padding:8px 10px;margin:8px 0;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.ev.job{border-left-color:var(--deep)}
+.ev .l{font-size:15px;line-height:1.55;word-break:break-word}
+.ev .l b{color:var(--deep)}
+.ev .w{font-size:13px;color:var(--mute);margin-top:2px}
+.ev .who{font-size:12px;font-weight:700;color:var(--green)}
+.ev .acts{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}.ev .acts button{min-height:32px;font-size:13px;padding:0 10px}
+.dayh{font-size:16px;font-weight:700;color:var(--deep);margin:0 0 4px}
+.dayh.red{color:var(--red)}
+.hol-tag{display:inline-block;background:var(--red);color:#fff;border-radius:6px;font-size:12px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mute);margin:8px 2px}
+.legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-2px;background:var(--c);border:1px solid var(--line)}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(10,20,40,.5);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow:auto}
+.modal[hidden]{display:none}
+.box{background:#fff;border-radius:14px;max-width:460px;width:100%;padding:18px;margin:auto}
+.box h2{margin:0 0 8px;color:var(--deep);font-size:18px}
+.box label{display:block;font-size:12px;font-weight:700;color:var(--mute);margin:10px 0 4px}
+.box input,.box textarea,.box select{width:100%;padding:9px 10px;border:1px solid #c5cfdd;border-radius:8px;color:var(--ink);background:#fff}
+.box textarea{min-height:70px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.box .acts{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+@media(max-width:640px){
+  .cell{min-height:58px;padding:2px}
+  .chip,.more{display:none}.dots{display:flex}
+  .hn{font-size:9.5px}
+  .month{min-width:0;flex:1}
+}
+@media print{.top,.bar,.pool,.legend,#yeNav,.acts{display:none!important}}
+</style>
+</head>
+<body>
+<div class="top"></div>
+<main>
+  <h1 id="ttl"></h1>
+  <p class="sub" id="sub"></p>
+
+  <div class="bar">
+    <button id="prev" type="button">‹</button>
+    <div class="month" id="mlabel"></div>
+    <button id="next" type="button">›</button>
+    <button id="today" type="button"></button>
+    <span class="sp"></span>
+    <select id="emp" hidden></select>
+    <button id="vGrid" type="button"></button>
+    <button id="vList" type="button"></button>
+    <button id="lang" type="button">EN / 中文</button>
+    <button id="add" type="button" class="pri"></button>
+  </div>
+  <div class="msg" id="msg" role="status"></div>
+
+  <section class="card pool" id="pool"></section>
+
+  <div id="gridWrap"><div class="grid" id="grid"></div></div>
+  <div id="listWrap" hidden></div>
+  <div class="legend" id="legend"></div>
+
+  <section class="card" id="day"></section>
+</main>
+
+<div class="modal" id="modal" hidden><form class="box" id="form" novalidate>
+  <h2 id="fT"></h2>
+  <div id="fEmpW" hidden><label id="fEmpL" for="fEmp"></label><select id="fEmp"></select></div>
+  <div class="row2"><div><label id="fDL" for="fD"></label><input type="date" id="fD" required></div>
+  <div><label id="fEL" for="fE"></label><input type="date" id="fE"></div></div>
+  <div class="row2"><div><label id="fSL" for="fS"></label><input type="time" id="fS"></div>
+  <div><label id="fTL" for="fT2"></label><input type="time" id="fT2"></div></div>
+  <label id="fAL" for="fA"></label><input id="fA" autocomplete="off">
+  <label id="fPL" for="fP"></label><input id="fP" autocomplete="off">
+  <label id="fWL" for="fW"></label><textarea id="fW"></textarea>
+  <div class="msg bad" id="fMsg"></div>
+  <div class="acts"><button type="button" id="fDel" class="dng" hidden></button><button type="button" id="fCancel"></button><button type="submit" class="pri" id="fSave"></button></div>
+</form></div>
+
+<script>
+(function(){
+'use strict';
+var SB='https://fkyuhthxfzhqmlikbrfg.supabase.co',SBK='sb_publishable_zbPzA78u7V3htYulP1b9_w_53KQFKHn',SESKEY='ye_ts_ses';
+var $=function(i){return document.getElementById(i)};
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
+function lsSet(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+
+/* ---------- language ---------- */
+var lang=(function(){var q=new URLSearchParams(location.search).get('lang');if(q==='zh'||q==='en')return q;var s=lsGet('ye_sched_lang');return s==='en'?'en':'zh'})();
+var T={
+ zh:{ttl:'日程表',sub:'新西兰公共假期与周末以红色标注。已确认的报价单会自动出现在这里。',today:'今天',add:'＋ 添加日程',grid:'月历',list:'列表',
+  dow:['一','二','三','四','五','六','日'],months:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+  allEmp:'全部员工',pool:'待安排 · 已确认、尚未写明工作时间的项目',poolNone:'没有待安排的项目。',poolHint:'这些项目的报价单已确认，但没有写明工作日期，请自行安排时间。',
+  schedule:'安排时间',addMine:'加入我的日程',sched:'已确认项目',mine:'我的日程',other:'员工日程',weekend:'周末',holiday:'公共假期',
+  tbc:'时间待定',noAddr:'（无地址）',noProj:'（无项目）',noItems:'这一天没有安排。',observed:'顺延',
+  newT:'添加日程',editT:'编辑日程',emp:'员工',d:'开始日期',e:'结束日期（可选）',s:'开始时间',t:'结束时间',a:'地址',p:'项目',w:'工作内容',
+  save:'保存',cancel:'取消',del:'删除',delQ:'确定删除这条日程吗？',needDate:'请选择日期。',endBefore:'结束日期不能早于开始日期。',
+  edit:'编辑',loading:'加载中…',loadFail:'加载失败：',saveFail:'保存失败：',offline:'连不上服务器，请检查网络。',
+  synced:'已同步确认的报价单：',syncFail:'报价单同步失败：',jobsAt:'员工看到的项目列表更新于 ',byOffice:'办公室安排',jobTag:'报价单',
+  setupHint:'日程表数据库还没有创建。请先在 Supabase 运行 schedule/supabase-setup.sql。',tl:'报价单时间：',
+  legWe:'周末',legHol:'公共假期',legJob:'已确认的报价项目',legMine:'日程',empNote:'（所选员工）',addrL:'地址',projL:'项目',timeL:'时间'},
+ en:{ttl:'Schedule',sub:'NZ public holidays and weekends are shown in red. Confirmed quotes appear here automatically.',today:'Today',add:'+ Add entry',grid:'Month',list:'List',
+  dow:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],months:['January','February','March','April','May','June','July','August','September','October','November','December'],
+  allEmp:'All employees',pool:'To schedule · confirmed jobs with no work dates',poolNone:'Nothing waiting to be scheduled.',poolHint:'These quotes are confirmed but do not state work dates. Pick your own time.',
+  schedule:'Schedule',addMine:'Add to my schedule',sched:'Confirmed job',mine:'My schedule',other:'Staff schedule',weekend:'Weekend',holiday:'Public holiday',
+  tbc:'Time TBC',noAddr:'(no address)',noProj:'(no project)',noItems:'Nothing scheduled this day.',observed:'observed',
+  newT:'Add entry',editT:'Edit entry',emp:'Employee',d:'Start date',e:'End date (optional)',s:'Start time',t:'End time',a:'Address',p:'Project',w:'Work to do',
+  save:'Save',cancel:'Cancel',del:'Delete',delQ:'Delete this entry?',needDate:'Choose a date.',endBefore:'End date cannot be before the start date.',
+  edit:'Edit',loading:'Loading…',loadFail:'Could not load: ',saveFail:'Could not save: ',offline:'Cannot reach the server. Check your connection.',
+  synced:'Confirmed quotes synced: ',syncFail:'Quote sync failed: ',jobsAt:'Job list for staff last updated ',byOffice:'Assigned by office',jobTag:'Quote',
+  setupHint:'The schedule tables do not exist yet. Run schedule/supabase-setup.sql in Supabase first.',tl:'Quote timeline: ',
+  legWe:'Weekend',legHol:'Public holiday',legJob:'Confirmed quote job',legMine:'Entry',empNote:'(selected employee)',addrL:'Address',projL:'Project',timeL:'Time'}
+};
+function t(k){return T[lang][k]}
+
+/* ---------- NZ public holidays ---------- */
+var MATARIKI={2022:'06-24',2023:'07-14',2024:'06-28',2025:'06-20',2026:'07-10',2027:'06-25',2028:'07-14',2029:'07-06',2030:'06-21',2031:'07-11',2032:'07-02',2033:'06-24',2034:'07-07',2035:'06-29',2036:'07-18',2037:'07-10',2038:'06-25',2039:'07-15',2040:'07-06',2041:'07-19',2042:'07-11',2043:'07-03',2044:'06-24',2045:'07-07',2046:'06-29',2047:'07-19',2048:'07-03',2049:'06-25',2050:'07-15',2051:'06-30',2052:'06-21'};
+function p2(n){return n<10?'0'+n:''+n}
+function iso(y,m,d){var x=new Date(Date.UTC(y,m,d));return x.getUTCFullYear()+'-'+p2(x.getUTCMonth()+1)+'-'+p2(x.getUTCDate())}
+function dow(y,m,d){return (new Date(Date.UTC(y,m,d)).getUTCDay()+6)%7} /* Mon=0 … Sun=6 */
+function easter(y){var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return[mo-1,da]}
+var holCache={};
+function holidays(y){
+  if(holCache[y])return holCache[y];var H={};
+  function put(date,en,zh,shifted){var o=H[date];if(o){o.en+=' / '+en;o.zh+=' / '+zh}else H[date]={en:en+(shifted?' (observed)':''),zh:zh+(shifted?'（顺延）':'')}}
+  /* New Year's Day, Day after New Year's Day */
+  var w1=dow(y,0,1);put(iso(y,0,w1===5?3:w1===6?2:1),"New Year's Day",'元旦',w1>=5);
+  var w2=dow(y,0,2);put(iso(y,0,w2===5?4:w2===6?4:w2===0?3:2),"Day after New Year's Day",'元旦翌日',w2===5||w2===6||w2===0);
+  /* Waitangi Day (Mondayised) */
+  var w=dow(y,1,6);put(iso(y,1,6+(w===5?2:w===6?1:0)),'Waitangi Day','怀唐伊日',w>=5);
+  /* Easter */
+  var e=easter(y);put(iso(y,e[0],e[1]-2),'Good Friday','耶稣受难日');put(iso(y,e[0],e[1]+1),'Easter Monday','复活节星期一');
+  /* ANZAC Day (Mondayised) */
+  w=dow(y,3,25);put(iso(y,3,25+(w===5?2:w===6?1:0)),'ANZAC Day','澳新军团日',w>=5);
+  /* King's Birthday: first Monday in June */
+  var d=1;while(dow(y,5,d)!==0)d++;put(iso(y,5,d),"King's Birthday",'国王诞辰日');
+  /* Matariki */
+  if(MATARIKI[y])put(y+'-'+MATARIKI[y],'Matariki','马塔里基（毛利新年）');
+  /* Labour Day: fourth Monday in October */
+  d=1;while(dow(y,9,d)!==0)d++;put(iso(y,9,d+21),'Labour Day','劳动节');
+  /* Christmas Day and Boxing Day */
+  w=dow(y,11,25);put(iso(y,11,25+(w===5||w===6?2:0)),'Christmas Day','圣诞节',w>=5);
+  w=dow(y,11,26);put(iso(y,11,26+(w===5||w===6?2:0)),'Boxing Day','节礼日',w>=5);
+  return holCache[y]=H}
+function holOf(date){var h=holidays(+date.slice(0,4))[date];return h?h[lang]:''}
+
+/* ---------- session / api ---------- */
+var ses=lsGet(SESKEY),gate=lsGet('ye_gate_ok')||{},me=(ses&&ses.email||'').toLowerCase(),isMgr=gate.role==='manager',myName='';
+function jwtPart(tk){try{return JSON.parse(decodeURIComponent(escape(atob(tk.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))))}catch(e){return{}}}
+function toSes(j,old){return{access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000,email:(j.user&&j.user.email)||(old&&old.email)||'',uid:(j.user&&j.user.id)||jwtPart(j.access_token).sub||(old&&old.uid)||''}}
+async function errOf(r){var m='';try{var j=await r.json();m=j.msg||j.message||j.error_description||j.error||''}catch(e){}var er=new Error((m||'Request failed')+' ('+r.status+')');er.status=r.status;return er}
+async function refreshSes(force){
+  var o=lsGet(SESKEY);if(o&&o.refresh_token&&ses&&o.refresh_token!==ses.refresh_token){ses=o;force=false}
+  if(!force&&ses.exp-Date.now()>120000)return;
+  var r=await fetch(SB+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SBK,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:ses.refresh_token})});
+  if(!r.ok){if([400,401,403].indexOf(r.status)>=0){lsSet(SESKEY,null);throw new Error('Sign-in expired. 登录已过期。')}throw await errOf(r)}
+  ses=toSes(await r.json(),ses);lsSet(SESKEY,ses)}
+async function sb(path,opt,retried){
+  opt=opt||{};if(!ses)throw new Error('Not signed in');await refreshSes();
+  var h={apikey:SBK,Authorization:'Bearer '+ses.access_token};if(opt.body)h['Content-Type']='application/json';if(opt.prefer)h.Prefer=opt.prefer;
+  var r=await fetch(SB+path,{method:opt.method||'GET',headers:h,body:opt.body,cache:'no-store'});
+  if(r.status===401&&!retried){await refreshSes(true);return sb(path,opt,true)}
+  if(!r.ok)throw await errOf(r);var tx=await r.text();return tx?JSON.parse(tx):null}
+function netMsg(e){if(e instanceof TypeError)return t('offline');if(/ye_sched|relation|schema cache|does not exist/i.test(e.message))return t('setupHint');return e.message}
+function say(s,bad){var m=$('msg');m.textContent=s||'';m.className='msg'+(bad?' bad':'')}
+
+/* ---------- quote → job parsing ---------- */
+var PLACE=/^(n\/?a|tbc|tbd|project location|client name|client address|project name|estimated timeline|待定|无)$/i;
+function plain(h){var e=document.createElement('div');e.innerHTML=String(h||'').replace(/<br\s*\/?>/gi,' ').replace(/<\/(div|p)>/gi,' ');return e.textContent.replace(/\s+/g,' ').trim()}
+function clean(h){var s=plain(h);return PLACE.test(s)?'':s}
+var MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,sept:9,oct:10,nov:11,dec:12};
+function validISO(y,m,d){if(m<1||m>12||d<1||d>31)return'';var x=new Date(Date.UTC(y,m-1,d));return x.getUTCMonth()===m-1?y+'-'+p2(m)+'-'+p2(d):''}
+function parseTimeline(txt){
+  var s=' '+(txt||'')+' ',dates=[],m,re;
+  function yr(v){v=+v;return v<100?2000+v:v}
+  re=/(\d{4})-(\d{1,2})-(\d{1,2})/g;while((m=re.exec(s))){var a=validISO(+m[1],+m[2],+m[3]);if(a)dates.push(a)}s=s.replace(re,' ');
+  re=/(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})/g;while((m=re.exec(s))){var b=validISO(yr(m[3]),+m[2],+m[1]);if(b)dates.push(b)}s=s.replace(re,' ');
+  re=/(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?,?\s+(\d{4})/gi;while((m=re.exec(s))){var c=validISO(+m[3],MON[m[2].toLowerCase()],+m[1]);if(c)dates.push(c)}s=s.replace(re,' ');
+  re=/(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/gi;while((m=re.exec(s))){var dd=validISO(+m[3],MON[m[1].toLowerCase()],+m[2]);if(dd)dates.push(dd)}s=s.replace(re,' ');
+  re=/(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})/g;while((m=re.exec(s))){var f=validISO(+m[1],+m[2],+m[3]);if(f)dates.push(f)}s=s.replace(re,' ');
+  dates.sort();
+  var st='',en='';
+  var tr=/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|—|to|至|~)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i.exec(s);
+  function hm(h,mi,ap){h=+h;mi=+(mi||0);if(ap){ap=ap.toLowerCase();if(ap==='pm'&&h<12)h+=12;if(ap==='am'&&h===12)h=0}return h<24&&mi<60?p2(h)+':'+p2(mi):''}
+  if(tr&&(tr[2]||tr[5]||tr[3]||tr[6])){var a2=tr[3]||tr[6],b2=tr[6]||tr[3];st=hm(tr[1],tr[2],tr[3]||(a2&&+tr[1]<=+tr[4]?a2:''));en=hm(tr[4],tr[5],b2);if(!st||!en){st='';en=''}}
+  return{start:dates[0]||'',end:dates.length?dates[dates.length-1]:'',st:st,en:en}}
+
+/* ---------- state ---------- */
+var view=new Date(),vy,vm,sel,mode=lsGet('ye_sched_mode')==='list'?'list':'grid';
+function nzToday(){try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Pacific/Auckland'}).format(new Date())}catch(e){return iso(view.getFullYear(),view.getMonth(),view.getDate())}}
+var TODAY=nzToday();vy=+TODAY.slice(0,4);vm=+TODAY.slice(5,7)-1;sel=TODAY;
+var jobs=[],entries=[],staff=[],jobsStamp='',editing=null;
+
+function gridRange(){var first=dow(vy,vm,1),s=iso(vy,vm,1-first);return{s:s,e:iso(vy,vm,1-first+41)}}
+async function loadEntries(){
+  var r=gridRange();
+  entries=await sb('/rest/v1/ye_sched_entries?select=*&work_date=lte.'+r.e+'&end_date=gte.'+r.s+'&order=work_date.asc,start_time.asc&limit=2000')||[]}
+async function loadJobs(){
+  jobs=await sb('/rest/v1/ye_sched_jobs?select=*&order=start_date.asc.nullsfirst&limit=1000')||[];
+  jobsStamp=jobs.reduce(function(a,j){return j.synced_at>a?j.synced_at:a},'')}
+async function syncJobs(){
+  /* office only: copy confirmed (signed / paid) quotes, WITHOUT prices, to the table staff can read */
+  var q='/rest/v1/ye_records?select=id,type:data->>type,status:data->>status,no:data->>no,client:data->>client,project:data->>project,name:data->>name,loc:data->data->fields->>projectLocation,addr:data->data->fields->>clientAddress,pn:data->data->fields->>projectName,tl:data->data->fields->>timeline&kind=eq.job&deleted=is.false&data-%3E%3Etype=eq.quote&data-%3E%3Estatus=in.(signed,paid)&limit=2000';
+  var a=await sb(q)||[];
+  var rows=a.map(function(x){var p=parseTimeline(plain(x.tl));
+    return{job_id:x.id,doc_no:clean(x.no),client:clean(x.client),project:clean(x.pn)||clean(x.project)||clean(x.name),address:clean(x.loc)||clean(x.addr),timeline:clean(x.tl),
+      start_date:p.start||null,end_date:p.end||null,start_time:p.st,end_time:p.en,status:x.status,synced_at:new Date().toISOString()}});
+  if(rows.length)await sb('/rest/v1/ye_sched_jobs?on_conflict=job_id',{method:'POST',body:JSON.stringify(rows),prefer:'resolution=merge-duplicates,return=minimal'});
+  var keep=rows.map(function(r){return'"'+r.job_id+'"'}).join(',');
+  await sb('/rest/v1/ye_sched_jobs?'+(rows.length?'job_id=not.in.('+encodeURIComponent(keep)+')':'job_id=not.is.null'),{method:'DELETE'});
+  return rows.length}
+async function loadStaff(){
+  try{var a=await sb('/rest/v1/ye_staff?select=email,name&order=email')||[];staff=a.map(function(s){return{email:(s.email||'').toLowerCase(),name:s.name||''}});
+    var mine=staff.filter(function(s){return s.email===me})[0];if(mine&&mine.name)myName=mine.name}catch(e){}
+  if(!myName)myName=me.split('@')[0]}
+function nameOf(email){email=(email||'').toLowerCase();var s=staff.filter(function(x){return x.email===email})[0];return(s&&s.name)||email.split('@')[0]}
+
+/* ---------- item helpers ---------- */
+function timeStr(st,en){return st?(en?st+'–'+en:st):t('tbc')}
+function itemsOn(date){
+  var out=[];
+  jobs.forEach(function(j){if(j.start_date&&j.start_date<=date&&date<=(j.end_date||j.start_date))out.push({kind:'job',j:j,st:j.start_time||'',en:j.end_time||'',address:j.address,project:j.project,work:t('jobTag')+(j.doc_no?' '+j.doc_no:'')})});
+  var f=$('emp').value;
+  entries.forEach(function(e){if(e.work_date<=date&&date<=e.end_date){if(isMgr&&f&&e.owner_email.toLowerCase()!==f)return;out.push({kind:'entry',e:e,st:e.start_time,en:e.end_time,address:e.address,project:e.project,work:e.work})}});
+  out.sort(function(a,b){return(a.kind===b.kind?0:a.kind==='job'?-1:1)||((a.st||'99')<(b.st||'99')?-1:(a.st||'99')>(b.st||'99')?1:0)});
+  return out}
+function pool(){return jobs.filter(function(j){return !j.start_date})}
+function lineHtml(it){
+  return'<div class="l">📍 <b>'+esc(it.address||t('noAddr'))+'</b> · 🏗 '+esc(it.project||t('noProj'))+' · 🕐 '+esc(timeStr(it.st,it.en))+'</div>'}
+function chipText(it){return(it.st?it.st+' ':'')+(it.address||it.project||it.work||'')}
+
+/* ---------- render ---------- */
+function render(){
+  $('ttl').textContent=t('ttl');$('sub').textContent=t('sub');$('today').textContent=t('today');$('add').textContent=t('add');$('vGrid').textContent=t('grid');$('vList').textContent=t('list');
+  $('vGrid').className=mode==='grid'?'on':'';$('vList').className=mode==='list'?'on':'';
+  document.documentElement.lang=lang==='zh'?'zh-CN':'en';
+  $('mlabel').textContent=lang==='zh'?vy+'年 '+t('months')[vm]:t('months')[vm]+' '+vy;
+  $('legend').innerHTML='<span style="--c:'+'#f9d6d6">'+t('legHol')+'</span><span style="--c:#fdecec">'+t('legWe')+'</span><span style="--c:#dde7f6">'+t('legJob')+'</span><span style="--c:#e5f4ec">'+t('legMine')+'</span>';
+  renderEmp();renderPool();
+  $('gridWrap').hidden=mode!=='grid';$('listWrap').hidden=mode!=='list';
+  if(mode==='grid')renderGrid();else renderList();
+  renderDay()}
+function renderEmp(){
+  var s=$('emp');if(!isMgr){s.hidden=true;return}
+  var cur=s.value,seen={},opts='<option value="">'+esc(t('allEmp'))+'</option>';
+  staff.forEach(function(x){seen[x.email]=1;opts+='<option value="'+esc(x.email)+'">'+esc(x.name||x.email)+'</option>'});
+  entries.forEach(function(e){var k=e.owner_email.toLowerCase();if(!seen[k]){seen[k]=1;opts+='<option value="'+esc(k)+'">'+esc(e.owner_name||k)+'</option>'}});
+  if(!seen[me]){opts+='<option value="'+esc(me)+'">'+esc(myName||me)+'</option>'}
+  s.innerHTML=opts;s.value=cur;s.hidden=false}
+function renderPool(){
+  var p=pool(),h='<h2>'+esc(t('pool'))+(p.length?' ('+p.length+')':'')+'</h2>';
+  if(!p.length)h+='<div class="none">'+esc(t('poolNone'))+'</div>';
+  else{h+='<div class="none">'+esc(t('poolHint'))+'</div>';
+    p.forEach(function(j){h+='<div class="it"><div class="t"><div class="l">📍 <b>'+esc(j.address||t('noAddr'))+'</b> · 🏗 '+esc(j.project||t('noProj'))+'</div>'
+      +(j.timeline?'<div class="w" style="font-size:13px;color:var(--mute)">'+esc(t('tl'))+esc(j.timeline)+'</div>':'')+'</div>'
+      +'<button type="button" class="pri" data-pj="'+esc(j.job_id)+'">'+esc(isMgr?t('schedule'):t('schedule'))+'</button></div>'})}
+  $('pool').innerHTML=h;
+  Array.prototype.forEach.call($('pool').querySelectorAll('[data-pj]'),function(b){b.onclick=function(){openForm(null,jobDefaults(b.getAttribute('data-pj'),sel))}})}
+function renderGrid(){
+  var r=gridRange(),h='';
+  for(var i=0;i<7;i++)h+='<div class="dow'+(i>=5?' we':'')+'">'+esc(t('dow')[i])+'</div>';
+  for(var k=0;k<42;k++){
+    var d=iso(vy,vm,1-dow(vy,vm,1)+k),dd=+d.slice(8),inM=+d.slice(5,7)-1===vm,wd=k%7>=5,hn=holOf(d);
+    var its=itemsOn(d),cls='cell'+(inM?'':' out')+(wd?' we':'')+(hn?' hol':'')+(d===TODAY?' today':'')+(d===sel?' sel':'');
+    h+='<div class="'+cls+'" data-d="'+d+'"><span class="n">'+dd+'</span>'+(hn?'<div class="hn">'+esc(hn)+'</div>':'');
+    its.slice(0,3).forEach(function(it){h+='<span class="chip '+(it.kind==='job'?'job':'me')+'">'+esc(chipText(it))+'</span>'});
+    if(its.length>3)h+='<div class="more">+'+(its.length-3)+'</div>';
+    if(its.length){h+='<div class="dots">';its.slice(0,6).forEach(function(it){h+='<i class="'+it.kind+'"></i>'});h+='</div>'}
+    h+='</div>'}
+  $('grid').innerHTML=h;
+  Array.prototype.forEach.call($('grid').querySelectorAll('.cell'),function(c){c.onclick=function(){sel=c.getAttribute('data-d');render();$('day').scrollIntoView({behavior:'smooth',block:'nearest'})}})}
+function dayTitle(d){
+  var y=+d.slice(0,4),m=+d.slice(5,7),dn=+d.slice(8),w=dow(y,m-1,dn),hn=holOf(d);
+  var wk=lang==='zh'?'周'+t('dow')[w]:t('dow')[w];
+  var txt=lang==='zh'?y+'年'+m+'月'+dn+'日 '+wk:wk+' '+dn+' '+t('months')[m-1]+' '+y;
+  return'<div class="dayh'+(w>=5||hn?' red':'')+'">'+esc(txt)+(hn?'<span class="hol-tag">'+esc(hn)+'</span>':w>=5?'<span class="hol-tag" style="background:#e57373">'+esc(t('weekend'))+'</span>':'')+'</div>'}
+function evHtml(it){
+  var h='<div class="ev '+it.kind+'">';
+  if(it.kind==='job')h+='<div class="who" style="color:var(--deep)">'+esc(t('sched'))+(it.j.doc_no?' · '+esc(it.j.doc_no):'')+'</div>'+lineHtml(it)+'<div class="acts"><button type="button" data-aj="'+esc(it.j.job_id)+'">'+esc(t('addMine'))+'</button></div>';
+  else{var e=it.e,mine=e.owner_email.toLowerCase()===me,canEdit=isMgr||e.created_by.toLowerCase()===me;
+    h+='<div class="who">'+(isMgr||!mine?esc(e.owner_name||nameOf(e.owner_email)):esc(t('mine')))+(e.created_by.toLowerCase()!==e.owner_email.toLowerCase()?' · '+esc(t('byOffice')):'')+'</div>'+lineHtml(it)+(e.work?'<div class="w">'+esc(e.work)+'</div>':'')
+      +(canEdit?'<div class="acts"><button type="button" data-ee="'+esc(e.id)+'">'+esc(t('edit'))+'</button></div>':'')}
+  return h+'</div>'}
+function bindEv(root){
+  Array.prototype.forEach.call(root.querySelectorAll('[data-ee]'),function(b){b.onclick=function(){var e=entries.filter(function(x){return x.id===b.getAttribute('data-ee')})[0];if(e)openForm(e)}});
+  Array.prototype.forEach.call(root.querySelectorAll('[data-aj]'),function(b){b.onclick=function(){openForm(null,jobDefaults(b.getAttribute('data-aj'),sel,true))}})}
+function renderDay(){
+  var its=itemsOn(sel),h=dayTitle(sel);
+  if(!its.length)h+='<div class="msg">'+esc(t('noItems'))+'</div>';else its.forEach(function(it){h+=evHtml(it)});
+  $('day').innerHTML=h;bindEv($('day'))}
+function renderList(){
+  var h='',last=iso(vy,vm+1,0),any=false;
+  for(var d=iso(vy,vm,1);d<=last;d=iso(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8)+1)){
+    var its=itemsOn(d),hn=holOf(d),w=dow(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8));
+    if(!its.length&&!hn&&!(w>=5&&false))continue;any=true;
+    h+='<section class="card">'+dayTitle(d);its.forEach(function(it){h+=evHtml(it)});h+='</section>'}
+  if(!any)h='<div class="card msg">'+esc(t('noItems'))+'</div>';
+  $('listWrap').innerHTML=h;bindEv($('listWrap'))}
+
+/* ---------- entry form ---------- */
+function jobDefaults(id,date,mineOnly){
+  var j=jobs.filter(function(x){return x.job_id===id})[0];if(!j)return{};
+  return{work_date:j.start_date||date,end_date:j.end_date||j.start_date||date,start_time:j.start_time,end_time:j.end_time,address:j.address,project:j.project,work:'',job_id:j.job_id}}
+function openForm(e,def){
+  editing=e;var d=e||def||{work_date:sel,end_date:sel};
+  $('fT').textContent=t(e?'editT':'newT');
+  ['fEmpL:emp','fDL:d','fEL:e','fSL:s','fTL:t','fAL:a','fPL:p','fWL:w'].forEach(function(x){var p=x.split(':');$(p[0]).textContent=t(p[1])});
+  $('fSave').textContent=t('save');$('fCancel').textContent=t('cancel');$('fDel').textContent=t('del');$('fDel').hidden=!e;
+  $('fD').value=d.work_date||sel;$('fE').value=(d.end_date&&d.end_date!==d.work_date)?d.end_date:'';$('fS').value=d.start_time||'';$('fT2').value=d.end_time||'';
+  $('fA').value=d.address||'';$('fP').value=d.project||'';$('fW').value=d.work||'';$('fMsg').textContent='';
+  var w=$('fEmpW');w.hidden=!isMgr;
+  if(isMgr){var s=$('fEmp'),seen={},o='';
+    function opt(em,nm){em=em.toLowerCase();if(seen[em])return;seen[em]=1;o+='<option value="'+esc(em)+'">'+esc(nm||em)+'</option>'}
+    opt(me,myName||me);staff.forEach(function(x){opt(x.email,x.name)});if(e)opt(e.owner_email,e.owner_name);
+    s.innerHTML=o;s.value=e?e.owner_email.toLowerCase():($('emp').value||me)}
+  editing=e;editing_def=d;$('modal').hidden=false;$('fD').focus()}
+var editing_def=null;
+function closeForm(){$('modal').hidden=true}
+async function saveForm(ev){
+  ev.preventDefault();var fm=$('fMsg');fm.textContent='';
+  var d=$('fD').value,e=$('fE').value||d;
+  if(!d){fm.textContent=t('needDate');return}if(e<d){fm.textContent=t('endBefore');return}
+  var owner=isMgr?$('fEmp').value.toLowerCase():me,oname=owner===me?myName:nameOf(owner);
+  var row={owner_email:owner,owner_name:oname,work_date:d,end_date:e,start_time:$('fS').value,end_time:$('fT2').value,address:$('fA').value.trim(),project:$('fP').value.trim(),work:$('fW').value.trim()};
+  var btn=$('fSave');btn.disabled=true;
+  try{
+    if(editing)await sb('/rest/v1/ye_sched_entries?id=eq.'+encodeURIComponent(editing.id),{method:'PATCH',body:JSON.stringify(row),prefer:'return=minimal'});
+    else{row.created_by=me;if(editing_def&&editing_def.job_id)row.job_id=editing_def.job_id;await sb('/rest/v1/ye_sched_entries',{method:'POST',body:JSON.stringify(row),prefer:'return=minimal'})}
+    closeForm();sel=d;var y=+d.slice(0,4),m=+d.slice(5,7)-1;if(y!==vy||m!==vm){vy=y;vm=m}
+    await loadEntries();render()
+  }catch(er){fm.textContent=t('saveFail')+netMsg(er)}
+  btn.disabled=false}
+async function delForm(){
+  if(!editing||!confirm(t('delQ')))return;
+  try{await sb('/rest/v1/ye_sched_entries?id=eq.'+encodeURIComponent(editing.id),{method:'DELETE'});closeForm();await loadEntries();render()}
+  catch(er){$('fMsg').textContent=t('saveFail')+netMsg(er)}}
+
+/* ---------- wiring ---------- */
+function shift(n){vm+=n;if(vm<0){vm=11;vy--}if(vm>11){vm=0;vy++}reload()}
+async function reload(){try{await loadEntries()}catch(e){say(t('loadFail')+netMsg(e),true)}render()}
+$('prev').onclick=function(){shift(-1)};$('next').onclick=function(){shift(1)};
+$('today').onclick=function(){vy=+TODAY.slice(0,4);vm=+TODAY.slice(5,7)-1;sel=TODAY;reload()};
+$('add').onclick=function(){openForm(null)};
+$('vGrid').onclick=function(){mode='grid';lsSet('ye_sched_mode',mode);render()};$('vList').onclick=function(){mode='list';lsSet('ye_sched_mode',mode);render()};
+$('lang').onclick=function(){lang=lang==='zh'?'en':'zh';lsSet('ye_sched_lang',lang);render()};
+$('emp').onchange=render;
+$('form').onsubmit=saveForm;$('fCancel').onclick=closeForm;$('fDel').onclick=delForm;
+$('modal').addEventListener('mousedown',function(e){if(e.target===$('modal'))closeForm()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('modal').hidden)closeForm()});
+
+async function boot(){
+  render();
+  if(!ses){say('Please sign in from the home page. 请先在主页登录。',true);return}
+  say(t('loading'));
+  try{
+    await loadStaff();
+    if(isMgr){try{var n=await syncJobs();}catch(e){say(t('syncFail')+netMsg(e),true);var failed=true}}
+    await Promise.all([loadJobs(),loadEntries()]);
+    if(!failed)say(isMgr?t('synced')+jobs.length:(jobsStamp?t('jobsAt')+new Date(jobsStamp).toLocaleString(lang==='zh'?'zh-CN':'en-NZ',{timeZone:'Pacific/Auckland',dateStyle:'medium',timeStyle:'short'}):''));
+  }catch(e){say(t('loadFail')+netMsg(e),true)}
+  render()}
+boot();
+/* expose pure helpers for the test page */
+window.__sched={holidays:holidays,parseTimeline:parseTimeline};
+})();
+</script>
+</body>
+</html>
