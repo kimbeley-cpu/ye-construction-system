@@ -7,9 +7,10 @@
 --     A staff account sees only the rows whose owner_email is their own email, and can add /
 --     edit / delete only the rows they created themselves (items the office assigned to them
 --     are read-only for them).
---   * ye_sched_jobs (confirmed quotes): written only by office accounts (the Schedule page
---     copies signed/paid quotes here when an office account opens it, with NO prices).
---     Any staff or office account can read it.
+--   * ye_sched_jobs (confirmed quotes, NO prices): written only by office accounts. The Business
+--     System fills it when a quote is marked Signed/Paid and workers are picked; the Schedule page
+--     also reconciles it when an office account opens it. A staff account can read only the jobs
+--     that list them as a worker.
 
 create or replace function public.ye_sched_is_manager() returns boolean
   language sql stable security definer set search_path = public as $$
@@ -84,14 +85,20 @@ create table if not exists public.ye_sched_jobs (
   end_date    date,
   start_time  text not null default '',
   end_time    text not null default '',
+  assignees   text[] not null default '{}',   -- lower-case emails of the workers picked in the quote
   status      text not null default '',
   synced_at   timestamptz not null default now()
 );
+
+-- in case an earlier version of this table already exists
+alter table public.ye_sched_jobs add column if not exists assignees text[] not null default '{}';
 
 alter table public.ye_sched_jobs enable row level security;
 drop policy if exists "sched jobs manager all" on public.ye_sched_jobs;
 drop policy if exists "sched jobs staff read"  on public.ye_sched_jobs;
 create policy "sched jobs manager all" on public.ye_sched_jobs for all
   using (public.ye_sched_is_manager()) with check (public.ye_sched_is_manager());
+-- staff see only the jobs whose quote lists them as a worker
 create policy "sched jobs staff read" on public.ye_sched_jobs for select
-  using (public.ye_sched_is_staff());
+  using (public.ye_sched_is_staff()
+     and exists (select 1 from unnest(assignees) a where lower(a) = lower(auth.jwt() ->> 'email')));
