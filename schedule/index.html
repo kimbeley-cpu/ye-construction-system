@@ -316,9 +316,19 @@ async function refreshSes(force){
 async function sb(path,opt,retried){
   opt=opt||{};if(!ses)throw new Error('Not signed in');await refreshSes();
   var h={apikey:SBK,Authorization:'Bearer '+ses.access_token};if(opt.body)h['Content-Type']='application/json';if(opt.prefer)h.Prefer=opt.prefer;
-  var r=await fetch(SB+path,{method:opt.method||'GET',headers:h,body:opt.body,cache:'no-store'});
+  var r=await fetch(SB+path,{method:opt.method||'GET',headers:h,body:opt.body,cache:'no-store',keepalive:!!opt.keepalive});
   if(r.status===401&&!retried){await refreshSes(true);return sb(path,opt,true)}
-  if(!r.ok)throw await errOf(r);var tx=await r.text();return tx?JSON.parse(tx):null}
+  if(!r.ok)throw await errOf(r);var tx=await r.text();
+  if(opt.count){var tot=parseInt(((r.headers.get('content-range')||'').split('/')[1])||'',10);return{rows:tx?JSON.parse(tx):[],total:isNaN(tot)?-1:tot}}
+  return tx?JSON.parse(tx):null}
+/* every row of a query: the server returns at most 1000 rows per request, so read page after page and make sure nothing is missing.
+   `path` must contain a ?query with a stable order= and no limit= */
+async function sbAll(path){
+  var out=[],r,n=0;
+  do{r=await sb(path+'&offset='+out.length,{prefer:'count=exact',count:true});out=out.concat(r.rows)}
+  while(r.rows.length&&(r.total<0||out.length<r.total)&&++n<500);
+  if(r.total>=0&&out.length<r.total)throw new Error('Incomplete data ('+out.length+'/'+r.total+')');
+  return out}
 function netMsg(e){if(e instanceof TypeError)return t('offline');if(/ye_sched|relation|schema cache|does not exist/i.test(e.message))return t('setupHint');return e.message}
 function say(s,bad){var m=$('msg');m.textContent=s||'';m.className='msg'+(bad?' bad':'')}
 
@@ -326,22 +336,26 @@ function say(s,bad){var m=$('msg');m.textContent=s||'';m.className='msg'+(bad?' 
 var mode=(function(){var m=lsGet('ye_sched_mode');return m==='list'||m==='week'?m:'grid'})();
 function nzToday(){try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Pacific/Auckland'}).format(new Date())}catch(e){var n=new Date();return iso(n.getFullYear(),n.getMonth(),n.getDate())}}
 var TODAY=nzToday(),vy=+TODAY.slice(0,4),vm=+TODAY.slice(5,7)-1,sel=TODAY;
-var wk=mondayOf(sel),note='',noteOk=true,noteTimer=0;
+var wk=mondayOf(sel),note='',noteOk=true,noteTimer=0,notePend=null;
 var jobs=[],entries=[],jobEntries=[],staff=[],editing=null,editDef=null;
 
 function gridRange(){var first=dow(vy,vm,1);return{s:iso(vy,vm,1-first),e:iso(vy,vm,1-first+41)}}
 async function loadEntries(){
   var r=curRange();
-  entries=await sb('/rest/v1/ye_sched_entries?select=*&work_date=lte.'+r.e+'&end_date=gte.'+r.s+'&order=work_date.asc,start_time.asc&limit=2000')||[]}
+  entries=await sbAll('/rest/v1/ye_sched_entries?select=*&work_date=lte.'+r.e+'&end_date=gte.'+r.s+'&order=work_date.asc,start_time.asc,id.asc')}
 async function loadJobs(){
-  jobs=await sb('/rest/v1/ye_sched_jobs?select=*&order=start_date.asc.nullsfirst&limit=1000')||[];
-  try{jobEntries=await sb('/rest/v1/ye_sched_entries?select=job_id,owner_email&job_id=not.is.null&limit=5000')||[]}catch(e){jobEntries=[]}}
+  jobs=await sbAll('/rest/v1/ye_sched_jobs?select=*&order=start_date.asc.nullsfirst,job_id.asc');
+  try{jobEntries=await sbAll('/rest/v1/ye_sched_entries?select=job_id,owner_email&job_id=not.is.null&order=id.asc')}catch(e){jobEntries=[]}}
 async function syncJobs(){
   /* office only: reconcile ye_sched_jobs with the signed / paid quotes in the company records (no prices are copied) */
-  var q='/rest/v1/ye_records?select=id,type:data-%3E%3Etype,status:data-%3E%3Estatus,no:data-%3E%3Eno,client:data-%3E%3Eclient,project:data-%3E%3Eproject,name:data-%3E%3Ename,assignees:data-%3Eassignees,casuals:data-%3Ecasuals,loc:data-%3Edata-%3Efields-%3E%3EprojectLocation,addr:data-%3Edata-%3Efields-%3E%3EclientAddress,pn:data-%3Edata-%3Efields-%3E%3EprojectName,tl:data-%3Edata-%3Efields-%3E%3Etimeline&kind=eq.job&deleted=is.false&data-%3E%3Etype=eq.quote&data-%3E%3Estatus=in.(signed,paid)&limit=2000';
-  var a=await sb(q)||[];
-  var rows=a.map(function(x){return YESched.rowFrom(x)});
-  await YESched.push(rows,rows.map(function(r){return r.job_id}),function(p,o){return sb(p,o)});
+  var q='/rest/v1/ye_records?select=id,type:data-%3E%3Etype,status:data-%3E%3Estatus,no:data-%3E%3Eno,client:data-%3E%3Eclient,project:data-%3E%3Eproject,name:data-%3E%3Ename,assignees:data-%3Eassignees,casuals:data-%3Ecasuals,loc:data-%3Edata-%3Efields-%3E%3EprojectLocation,addr:data-%3Edata-%3Efields-%3E%3EclientAddress,pn:data-%3Edata-%3Efields-%3E%3EprojectName,tl:data-%3Edata-%3Efields-%3E%3Etimeline&kind=eq.job&deleted=is.false&data-%3E%3Etype=eq.quote&data-%3E%3Estatus=in.(signed,paid)&order=id.asc';
+  var a=await sbAll(q),call=function(p,o){return sb(p,o)};
+  var rows=a.map(function(x){return YESched.rowFrom(x)}),keep={};
+  rows.forEach(function(r){keep[r.job_id]=1});
+  await YESched.push(rows,null,call);
+  /* jobs whose quote is no longer Signed / Paid: only removed after the complete quote list has been read (sbAll throws if it is not complete) */
+  var old=(await sbAll('/rest/v1/ye_sched_jobs?select=job_id&order=job_id.asc')).map(function(x){return x.job_id}).filter(function(id){return !keep[id]});
+  if(old.length)await YESched.remove(old,call);
   return rows.length}
 async function loadStaff(){
   try{var a=await sb('/rest/v1/ye_staff?select=email,name&order=email')||[];staff=a.map(function(s){return{email:(s.email||'').toLowerCase(),name:s.name||''}});
@@ -419,7 +433,7 @@ function dayTitle(d){
   return'<div class="dayh'+(w>=5||hn?' red':'')+'">'+esc(txt)+(hn?'<span class="tag">'+esc(hn)+'</span>':w>=5?'<span class="tag we">'+esc(t('weekend'))+'</span>':'')+'</div>'}
 function evHtml(it){
   var h='<div class="ev '+it.kind+'">';
-  if(it.kind==='job'){var w=workersOf(it.j);h+='<div class="who">'+esc(t('jobTag'))+(it.j.doc_no?' · '+esc(it.j.doc_no):'')+'</div>'+lineHtml(it)+(isMgr?'<div class="w">👷 '+(w?esc(w):esc(t('unassigned')))+'</div>':'')}
+  if(it.kind==='job'){var w=workersOf(it.j);h+='<div class="who">'+esc(t('jobTag'))+(it.j.doc_no?' · '+esc(it.j.doc_no):'')+'</div>'+lineHtml(it)+(it.j.timeline?'<div class="w">🗓 '+esc(t('tl'))+esc(it.j.timeline)+'</div>':'')+(isMgr?'<div class="w">👷 '+(w?esc(w):esc(t('unassigned')))+'</div>':'')}
   else{var e=it.e,mine=e.owner_email.toLowerCase()===me,canEdit=(isMgr||e.created_by.toLowerCase()===me)&&e.source!=='timesheet';
     h+='<div class="who">'+(isMgr||!mine?esc(e.owner_name||nameOf(e.owner_email)):esc(t('mine')))+(e.created_by.toLowerCase()!==e.owner_email.toLowerCase()?' · '+esc(t('byOffice')):'')+(e.source==='timesheet'?' · ⏱ '+esc(t('fromTs')):'')+'</div>'+lineHtml(it)+(e.work?'<div class="w">'+esc(e.work)+'</div>':'')
       +(canEdit?'<div class="acts"><button type="button" class="sm" data-ee="'+esc(e.id)+'">'+esc(t('edit'))+'</button></div>':'')}
@@ -496,6 +510,7 @@ function wiHtml(it){
   if(it.kind==='entry'&&!ts&&(isMgr||it.e.created_by.toLowerCase()===me))btn='<div><button type="button" class="sm" data-ee="'+esc(it.e.id)+'">'+esc(t('edit'))+'</button></div>';
   return'<div class="wi '+(it.kind==='job'?'job':'')+'"><b>'+esc(it.st?(it.en?it.st+'–'+it.en:it.st):t('tbc'))+(ts?' ⏱':'')+'</b>'
     +(it.address?'<div>📍 '+esc(it.address)+'</div>':'')+(it.project?'<div>🏗 '+esc(it.project)+'</div>':'')+(it.work?'<div class="ww">'+esc(it.work)+'</div>':'')
+    +(it.kind==='job'&&it.j.timeline?'<div class="ww">🗓 '+esc(t('tl'))+esc(it.j.timeline)+'</div>':'')
     +(it.kind==='job'&&isMgr?'<div class="ww">👷 '+esc(workersOf(it.j)||t('unassigned'))+'</div>':'')+btn+'</div>'}
 function renderWeek(){
   var h='<div class="wv">',i;
@@ -530,9 +545,12 @@ function renderMemo(){
   var ta=$('noteTa');if(!ta||ro)return;
   ta.oninput=function(){
     note=ta.value;var w=wk,txt=note;$('noteSt').textContent=t('noteSaving');clearTimeout(noteTimer);
-    noteTimer=setTimeout(function(){saveNote(w,txt)},900)}}
-async function saveNote(w,txt){
-  try{await sb('/rest/v1/ye_sched_notes?on_conflict=owner_email,week_start',{method:'POST',body:JSON.stringify({owner_email:me,week_start:w,note:txt,updated_at:new Date().toISOString()}),prefer:'resolution=merge-duplicates,return=minimal'});
+    notePend={w:w,txt:txt};noteTimer=setTimeout(function(){saveNote(w,txt)},900)}}
+/* leaving the page (or switching app) right after typing: save what is still waiting */
+function flushNote(){if(!notePend)return;clearTimeout(noteTimer);var p=notePend;saveNote(p.w,p.txt,true)}
+async function saveNote(w,txt,leaving){
+  notePend=null;
+  try{await sb('/rest/v1/ye_sched_notes?on_conflict=owner_email,week_start',{keepalive:!!leaving,method:'POST',body:JSON.stringify({owner_email:me,week_start:w,note:txt,updated_at:new Date().toISOString()}),prefer:'resolution=merge-duplicates,return=minimal'});
     var s=$('noteSt');if(s&&w===wk)s.textContent=t('noteSaved')+new Date().toLocaleTimeString(lang==='zh'?'zh-CN':'en-NZ',{hour:'2-digit',minute:'2-digit'})}
   catch(e){var s2=$('noteSt');if(s2)s2.textContent=t('saveFail')+netMsg(e)}}
 function printHead(){
@@ -551,7 +569,7 @@ function doPdf(){
   window.addEventListener('afterprint',function once(){document.title=old;window.removeEventListener('afterprint',once)});
   setTimeout(function(){window.print()},120)}
 async function fetchRange(s,e,all){
-  var a=await sb('/rest/v1/ye_sched_entries?select=*&work_date=lte.'+e+'&end_date=gte.'+s+'&order=work_date.asc,start_time.asc&limit=5000')||[];
+  var a=await sbAll('/rest/v1/ye_sched_entries?select=*&work_date=lte.'+e+'&end_date=gte.'+s+'&order=work_date.asc,start_time.asc,id.asc');
   var f=$('emp').value;if(!all&&isMgr&&f)a=a.filter(function(x){return x.owner_email.toLowerCase()===f});return a}
 var COLS=['employee_email','employee_name','date','end_date','start_time','end_time','address','project','work'];
 function outRows(a){return a.map(function(e){return{employee_email:e.owner_email,employee_name:e.owner_name,date:e.work_date,end_date:e.end_date,start_time:e.start_time,end_time:e.end_time,address:e.address,project:e.project,work:e.work}})}
@@ -620,23 +638,26 @@ $('xmodal').addEventListener('mousedown',function(e){if(e.target===$('xmodal'))$
 $('form').onsubmit=saveForm;$('fCancel').onclick=closeForm;$('fDel').onclick=delForm;
 $('modal').addEventListener('mousedown',function(e){if(e.target===$('modal'))closeForm()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('modal').hidden)closeForm()});
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flushNote()});
+window.addEventListener('pagehide',flushNote);
 
 /* office only: make sure every employee's timesheet shifts are on the schedule, even if their phone has not synced them yet */
 function normA(x){return String(x||'').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g,'')}
 async function syncTimesheets(){
-  var rows=await sb('/rest/v1/ye_timesheets?select=id,email,employee,shifts:data-%3Eshifts&order=updated_at.desc&limit=300')||[];
-  var key=function(x){return[x.ts_id,x.work_date,x.start_time||'',x.end_time||'',normA(x.address)].join('|')};
+  var rows=await sbAll('/rest/v1/ye_timesheets?select=id,email,employee,shifts:data-%3Eshifts&order=id.asc');
+  var key=function(x){return[x.ts_id,x.work_date,x.start_time||'',x.end_time||'',normA(x.address),x.job_id||''].join('|')};
   var want={},ids={};
   rows.forEach(function(r){
     var email=String(r.email||'').trim().toLowerCase();if(!email||!Array.isArray(r.shifts))return;ids[String(r.id)]=1;
     r.shifts.forEach(function(s){
       if(!Array.isArray(s))return;var date=String(s[0]||'');if(!/^\d{4}-\d\d-\d\d$/.test(date))return;
-      var loc=String(s[4]||'').trim(),na=normA(loc),cow=String(s[5]||'').trim();
-      var job=na.length>=6?jobs.filter(function(j){var a=normA(j.address);return a.length>=6&&(a.indexOf(na)>=0||na.indexOf(a)>=0)})[0]:null;
+      var loc=String(s[4]||'').trim(),cow=String(s[5]||'').trim();
+      /* only the jobs this worker is assigned to (the same ones their own Timesheet can see) */
+      var job=YESched.matchJob(jobs.filter(function(j){return(j.assignees||[]).indexOf(email)>=0}),loc);
       var row={owner_email:email,owner_name:r.employee||email.split('@')[0],created_by:email,work_date:date,end_date:date,start_time:String(s[1]||''),end_time:String(s[2]||''),address:loc,
         project:job?(job.project||''):'',work:'Timesheet 工时表'+(cow?' · '+cow:''),job_id:job?job.job_id:null,source:'timesheet',ts_id:String(r.id)};
       want[key(row)]=row})});
-  var have=await sb('/rest/v1/ye_sched_entries?select=id,work_date,start_time,end_time,address,ts_id&source=eq.timesheet&limit=10000')||[];
+  var have=await sbAll('/rest/v1/ye_sched_entries?select=id,work_date,start_time,end_time,address,ts_id,job_id&source=eq.timesheet&order=id.asc');
   var haveKeys={},extra=[];
   have.forEach(function(x){var k=key(x);if(want[k]&&!haveKeys[k])haveKeys[k]=1;else if(ids[x.ts_id])extra.push(x.id)});
   var add=Object.keys(want).filter(function(k){return !haveKeys[k]}).map(function(k){return want[k]}),i;
