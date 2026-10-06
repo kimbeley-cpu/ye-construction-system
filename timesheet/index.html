@@ -728,11 +728,15 @@ async function tsLoadDraft(){
   else tsTouch()}
 
 /* sign in / out */
+/* show the person's name from the staff list instead of the email address (cached in 'ye_who', shared with the home page) */
+function whoName(){try{const w=JSON.parse(localStorage.getItem('ye_who')||'null');return w&&ts.ses&&w.email===ts.ses.email&&w.name?w.name:''}catch(e){return''}}
+async function whoLoad(){try{const a=await tsFetch('/rest/v1/ye_staff?select=name&email=ilike.'+encodeURIComponent(ts.ses.email)),n=a&&a[0]&&a[0].name;if(n&&n!==whoName()){localStorage.setItem('ye_who',JSON.stringify({email:ts.ses.email,name:n}));tsBar()}}catch(e){}}
 async function tsBoot(){
   if(!ts.ses){tsBar();return}
   try{
     ts.role=(await tsFetch('/rest/v1/ye_members?select=email')).length?'manager':(await tsFetch('/rest/v1/ye_staff?select=email&email=ilike.'+encodeURIComponent(ts.ses.email))).length?'staff':'none';
     if(ts.role==='none'){tsBar('This email is not on the staff list yet. Ask the office to add it, then sign in again.',true);return}
+    whoLoad();
     ts.cur=lsGet('ye_ts_cur');await tsLoadDraft();
     const m=sessionStorage.getItem('ye_ts_flash');if(m){sessionStorage.removeItem('ye_ts_flash');tsBar(m)}else tsBar()}
   catch(e){tsBar(netMsg(e),true)}}
@@ -741,7 +745,7 @@ function tsBar(msg,bad){
   if(msg!==undefined){ts.msg=msg;ts.bad=!!bad}
   const b=$('cloudBar');let h='';
   if(!ts.ses)h='<span><strong>Not signed in.</strong> Sign in to send this record to the office and keep your draft on every device.</span><span class="cb-actions"><button type="button" class="btn btn-primary" data-a="login">Sign in</button></span>';
-  else h='<span>Signed in as <strong>'+esc(ts.ses.email)+'</strong>'+(ts.role==='manager'?' · manager':'')+'</span><span class="cb-actions">'+(canUse()?'<button type="button" class="btn btn-soft" data-a="mine">My records</button>':'')+(ts.role==='manager'?'<button type="button" class="btn btn-primary" data-a="all">All staff records</button>':'')+'<button type="button" class="btn btn-soft" data-a="out">Sign out</button></span>';
+  else h='<span>Signed in as <strong>'+esc(whoName()||ts.ses.email)+'</strong>'+(ts.role==='manager'?' · manager':'')+'</span><span class="cb-actions">'+(canUse()?'<button type="button" class="btn btn-soft" data-a="mine">My records</button>':'')+(ts.role==='manager'?'<button type="button" class="btn btn-primary" data-a="all">All staff records</button>':'')+'<button type="button" class="btn btn-soft" data-a="out">Sign out</button></span>';
   if(ts.note)h+='<p class="cb-note bad">Returned by the office: '+esc(ts.note)+'</p>';
   if(ts.msg)h+='<p class="cb-note'+(ts.bad?' bad':'')+'">'+esc(ts.msg)+'</p>';
   b.innerHTML=h;$('submitBtn').hidden=!!ts.view}

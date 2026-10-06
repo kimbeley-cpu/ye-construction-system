@@ -402,7 +402,7 @@ function clShow(){
   $('clHr').textContent=L('Restore from cloud','从云端恢复');$('clHd').textContent=L('Yes, delete in cloud','确认从云端删除');
   let on=!!cl.ses;$('clIn').classList.toggle('hidden',on);$('clOn').classList.toggle('hidden',!on);
   if(on){let n=Object.keys(cl.st.sh).filter(k=>cl.st.sh[k].t).length;
-    $('clInfo').textContent=L('Signed in: ','已登录：')+cl.ses.email+'\n'+L('Records in cloud: ','云端记录：')+n+(cl.last?'\n'+L('Last sync: ','上次同步：')+clTime(cl.last):'')+(cl.busy?'\n'+L('Syncing…','正在同步…'):'');
+    $('clInfo').textContent=L('Signed in: ','已登录：')+((w=>{try{w=JSON.parse(localStorage.getItem('ye_who')||'null');return w&&w.email===cl.ses.email&&w.name}catch(e){}})()||cl.ses.email)+'\n'+L('Records in cloud: ','云端记录：')+n+(cl.last?'\n'+L('Last sync: ','上次同步：')+clTime(cl.last):'')+(cl.busy?'\n'+L('Syncing…','正在同步…'):'');
     $('clHold').classList.toggle('hidden',!cl.hold);
     if(cl.hold)$('clHoldT').textContent=L('This device has '+cl.hold.length+' fewer jobs than the cloud. To prevent accidental loss these deletions were NOT sent. If you deleted them on purpose, confirm; otherwise restore.','本机比云端少了 '+cl.hold.length+' 个项目。为防误删，这些删除还没有同步到云端。如果是你自己删的，点确认；否则点恢复。')}
   $('clMsg').textContent=cl.err||''}
