@@ -23,12 +23,13 @@
     if(tr&&(tr[2]||tr[5]||tr[3]||tr[6])){var a2=tr[3]||tr[6],b2=tr[6]||tr[3];st=hm(tr[1],tr[2],tr[3]||(a2&&+tr[1]<=+tr[4]?a2:''));en=hm(tr[4],tr[5],b2);if(!st||!en){st='';en=''}}
     return{start:dates[0]||'',end:dates.length?dates[dates.length-1]:'',st:st,en:en}}
   function confirmed(type,status){return type==='quote'&&(status==='signed'||status==='paid')}
-  /* p: {id,status,no,client,project,name,pn,loc,addr,tl,assignees} (text fields may still hold HTML) */
+  /* p: {id,status,no,client,project,name,pn,loc,addr,tl,assignees,casuals} (text fields may still hold HTML) */
   function rowFrom(p){
     var pr=parseTimeline(plain(p.tl));
     return{job_id:p.id,doc_no:clean(p.no),client:clean(p.client),project:clean(p.pn)||clean(p.project)||clean(p.name),address:clean(p.loc)||clean(p.addr),timeline:clean(p.tl),
       start_date:pr.start||null,end_date:pr.end||null,start_time:pr.st,end_time:pr.en,
       assignees:(Array.isArray(p.assignees)?p.assignees:[]).map(function(x){return String(x).trim().toLowerCase()}).filter(Boolean),
+      casuals:(Array.isArray(p.casuals)?p.casuals:[]).map(function(x){return String(x).trim()}).filter(Boolean),
       status:p.status||'',synced_at:new Date().toISOString()}}
   /* upsert `rows`, then (unless allIds is null) drop every ye_sched_jobs row whose id is not in `allIds`. call(path,{method,body,prefer}) must throw on failure. */
   async function push(rows,allIds,call){

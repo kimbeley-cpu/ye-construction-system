@@ -85,6 +85,7 @@ create table if not exists public.ye_sched_jobs (
   end_date    date,
   start_time  text not null default '',
   end_time    text not null default '',
+  casuals     text[] not null default '{}',   -- casual workers (names only, not on the staff list)
   assignees   text[] not null default '{}',   -- lower-case emails of the workers picked in the quote
   status      text not null default '',
   synced_at   timestamptz not null default now()
@@ -92,6 +93,7 @@ create table if not exists public.ye_sched_jobs (
 
 -- in case an earlier version of this table already exists
 alter table public.ye_sched_jobs add column if not exists assignees text[] not null default '{}';
+alter table public.ye_sched_jobs add column if not exists casuals   text[] not null default '{}';
 
 alter table public.ye_sched_jobs enable row level security;
 drop policy if exists "sched jobs manager all" on public.ye_sched_jobs;

@@ -286,7 +286,7 @@ async function loadJobs(){
   try{jobEntries=await sb('/rest/v1/ye_sched_entries?select=job_id,owner_email&job_id=not.is.null&limit=5000')||[]}catch(e){jobEntries=[]}}
 async function syncJobs(){
   /* office only: reconcile ye_sched_jobs with the signed / paid quotes in the company records (no prices are copied) */
-  var q='/rest/v1/ye_records?select=id,type:data-%3E%3Etype,status:data-%3E%3Estatus,no:data-%3E%3Eno,client:data-%3E%3Eclient,project:data-%3E%3Eproject,name:data-%3E%3Ename,assignees:data-%3Eassignees,loc:data-%3Edata-%3Efields-%3E%3EprojectLocation,addr:data-%3Edata-%3Efields-%3E%3EclientAddress,pn:data-%3Edata-%3Efields-%3E%3EprojectName,tl:data-%3Edata-%3Efields-%3E%3Etimeline&kind=eq.job&deleted=is.false&data-%3E%3Etype=eq.quote&data-%3E%3Estatus=in.(signed,paid)&limit=2000';
+  var q='/rest/v1/ye_records?select=id,type:data-%3E%3Etype,status:data-%3E%3Estatus,no:data-%3E%3Eno,client:data-%3E%3Eclient,project:data-%3E%3Eproject,name:data-%3E%3Ename,assignees:data-%3Eassignees,casuals:data-%3Ecasuals,loc:data-%3Edata-%3Efields-%3E%3EprojectLocation,addr:data-%3Edata-%3Efields-%3E%3EclientAddress,pn:data-%3Edata-%3Efields-%3E%3EprojectName,tl:data-%3Edata-%3Efields-%3E%3Etimeline&kind=eq.job&deleted=is.false&data-%3E%3Etype=eq.quote&data-%3E%3Estatus=in.(signed,paid)&limit=2000';
   var a=await sb(q)||[];
   var rows=a.map(function(x){return YESched.rowFrom(x)});
   await YESched.push(rows,rows.map(function(r){return r.job_id}),function(p,o){return sb(p,o)});
@@ -309,7 +309,7 @@ function itemsOn(date){
 function pool(){return jobs.filter(function(j){return !j.start_date})}
 function lineHtml(it){return'<div class="l">📍 <b>'+esc(it.address||t('noAddr'))+'</b> · 🏗 '+esc(it.project||t('noProj'))+' · 🕐 '+esc(timeStr(it.st,it.en))+'</div>'}
 function chipText(it){return(it.st?it.st+' ':'')+(it.address||it.project||it.work||'')}
-function workersOf(j){var a=j.assignees||[];return a.length?a.map(nameOf).join(', '):''}
+function workersOf(j){var a=(j.assignees||[]).map(nameOf).concat((j.casuals||[]).map(function(c){return c+(lang==='zh'?'（临时）':' (casual)')}));return a.join(', ')}
 
 /* ---------- render ---------- */
 function render(){
