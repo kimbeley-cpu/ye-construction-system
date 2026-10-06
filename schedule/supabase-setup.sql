@@ -108,3 +108,20 @@ create policy "sched jobs manager all" on public.ye_sched_jobs for all
 create policy "sched jobs staff read" on public.ye_sched_jobs for select
   using (public.ye_sched_is_staff()
      and exists (select 1 from unnest(assignees) a where lower(a) = lower(auth.jwt() ->> 'email')));
+
+-- Weekly notes (the memo box on the week plan): one note per person per week.
+create table if not exists public.ye_sched_notes (
+  owner_email text not null,
+  week_start  date not null,
+  note        text not null default '',
+  updated_at  timestamptz not null default now(),
+  primary key (owner_email, week_start)
+);
+alter table public.ye_sched_notes enable row level security;
+drop policy if exists "sched notes manager all" on public.ye_sched_notes;
+drop policy if exists "sched notes own"         on public.ye_sched_notes;
+create policy "sched notes manager all" on public.ye_sched_notes for all
+  using (public.ye_sched_is_manager()) with check (public.ye_sched_is_manager());
+create policy "sched notes own" on public.ye_sched_notes for all
+  using (public.ye_sched_is_staff() and lower(owner_email) = lower(auth.jwt() ->> 'email'))
+  with check (public.ye_sched_is_staff() and lower(owner_email) = lower(auth.jwt() ->> 'email'));

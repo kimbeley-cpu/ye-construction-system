@@ -120,24 +120,33 @@ select{min-height:42px;padding:0 10px;border:1px solid var(--line);border-radius
   .box{border-radius:18px 18px 0 0;max-width:none;margin:0;max-height:94vh;overflow:auto;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
 }
 
-/* week plan */
-.wk{display:grid;grid-template-columns:130px repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--paper);box-shadow:0 2px 10px rgba(36,71,127,.06)}
-.wh{background:var(--deep);color:#fff;text-align:center;font-weight:700;font-size:13px;padding:8px 4px;cursor:pointer}
-.wh.red{background:var(--red)}.wh.tdy{box-shadow:inset 0 -4px 0 var(--sky)}.wh.corner{cursor:default}
-.wh small{display:block;font-weight:400;font-size:10.5px;line-height:1.2;margin-top:2px}
-.wl{padding:8px;font-weight:700;color:var(--deep);font-size:13px;background:#f1f5fb;border-top:1px solid var(--line);word-break:break-word}
-.wc{border-top:1px solid var(--line);border-left:1px solid var(--line);padding:5px;min-height:74px;font-size:12px}
-.wc.we{background:var(--redbg)}.wc.hol{background:var(--redbg2)}
-.wi{border-left:3px solid var(--green);background:var(--greenbg);border-radius:6px;padding:4px 6px;margin-bottom:5px;line-height:1.35;word-break:break-word}
+/* week plan (vertical, Monday to Sunday) */
+.wv{display:flex;flex-direction:column;gap:10px}
+.wd{display:grid;grid-template-columns:170px 1fr;background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(36,71,127,.05)}
+.wdh{background:#f1f5fb;padding:10px 12px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:6px;align-items:flex-start;cursor:pointer}
+.wdh b{color:var(--deep);font-size:15px}
+.wd.we .wdh{background:var(--redbg)}.wd.hol .wdh{background:var(--redbg2)}
+.wd.we .wdh b,.wd.hol .wdh b{color:var(--red)}
+.wd.tdy{box-shadow:0 0 0 2px var(--sky)}
+.wdb{padding:8px 10px;display:flex;flex-direction:column;gap:7px;min-width:0}
+.wd.we .wdb{background:#fffafa}.wd.hol .wdb{background:#fff6f6}
+.wgrp{font-size:12px;font-weight:700;color:var(--mute);margin-top:2px}
+.wempty{color:#aab4c4;padding:2px 0}
+.wi{border-left:4px solid var(--green);background:var(--greenbg);border-radius:8px;padding:7px 10px;line-height:1.45;word-break:break-word;font-size:14px}
 .wi.job{border-left-color:var(--deep);background:var(--jobbg)}
-.wi b{color:var(--deep);font-size:12px}.wi .ww{color:#374559;white-space:pre-wrap}
+.wi b{color:var(--deep)}.wi .ww{color:#374559;white-space:pre-wrap}
+.wi button{margin-top:6px}
+.memo textarea{width:100%;min-height:140px;padding:11px 12px;border:1px solid #c5cfdd;border-radius:10px;font-size:16px;line-height:1.5;color:var(--ink);resize:vertical;background:#fffef8}
+.memo textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(53,109,183,.22)}
+.memo textarea[readonly]{background:#f4f6f9}
+.memo .st{font-size:12px;color:var(--mute);min-height:16px;margin-top:4px}
+.noteprint{display:none;white-space:pre-wrap;font-size:13px}
 .printhead{display:none}
 .xbtn{display:block;width:100%;text-align:left;margin-top:8px;min-height:46px}
 .xrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:700px){
-  .wk{grid-template-columns:1fr}.wh{display:none}.wl{border-top:2px solid var(--deep)}
-  .wc{border-left:0;min-height:0;padding:6px 10px}.wc::before{content:attr(data-day);display:block;font-weight:700;font-size:12px;color:var(--mute);margin-bottom:3px}
-  .wc.we::before,.wc.hol::before{color:var(--red)}.wc.e{display:none}
+  .wd{grid-template-columns:1fr}
+  .wdh{flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line)}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 @page{size:A4 landscape;margin:10mm}
@@ -147,7 +156,7 @@ select{min-height:42px;padding:0 10px;border:1px solid var(--line);border-radius
   main{max-width:none;padding:0}
   .printhead{display:flex!important;align-items:center;gap:14px;border-bottom:3px solid var(--blue);padding-bottom:8px;margin-bottom:10px}
   .printhead img{width:150px;height:auto}.printhead b{font-size:18px;color:var(--deep)}.printhead div{font-size:13px;color:var(--mute)}
-  .grid,.wk,.card{box-shadow:none;break-inside:avoid}
+  .grid,.wd,.card{box-shadow:none;break-inside:avoid}.wi button,.wdh button,.memo textarea,.memo .st{display:none!important}.noteprint{display:block!important}.memo{break-inside:avoid}
   .cell{min-height:84px}.chip,.more,.hn{display:block!important}.dots{display:none!important}
   .hols,#hols{break-inside:avoid}
 }
@@ -178,6 +187,7 @@ select{min-height:42px;padding:0 10px;border:1px solid var(--line);border-radius
 
   <div id="gridWrap"><div class="grid" id="grid"></div></div>
   <div id="weekWrap" hidden></div>
+  <section class="card memo" id="memo" hidden></section>
   <div id="listWrap" hidden></div>
   <div class="legend" id="legend"></div>
 
@@ -221,7 +231,7 @@ function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){retur
 /* ---------- language ---------- */
 var lang=(function(){var q=new URLSearchParams(location.search).get('lang');if(q==='zh'||q==='en')return q;var s=lsGet('ye_sched_lang');return s==='en'?'en':'zh'})();
 var T={
- zh:{week:'周计划',exp:'导出 / 导入',xT:'导出、备份与导入',xHint:'选择日期范围。备份文件和 CSV 可以再导入回来，重复的日程会自动跳过。',xFL:'从',xTL:'到',xPdf:'📄 导出 PDF（在打印窗口选「另存为 PDF」）',xCsv:'📊 导出 Excel（CSV 表格）',xJson:'💾 保存备份文件（JSON）',xImp:'📥 导入（CSV 或 JSON）',xClose:'关闭',fromTs:'来自工时表',expDone:'已导出 ',impBad:'读不懂这个文件，请使用导出的 CSV 或 JSON。',impNone:'没有可导入的新日程。',impAsk:'将导入 {n} 条日程（跳过重复 {d} 条，无效 {b} 条）。继续吗？',impDone:'已导入 {n} 条日程。',noRange:'请选择日期范围。',ttl:'日程表',sub:'周末与新西兰公共假期以红色标注 · 已确认的报价单会推送给指派的工人',today:'今天',add:'＋ 添加日程',grid:'月历',list:'列表',langBtn:'EN',
+ zh:{noteT:'📝 本周备忘录 / 其他事项',notePh:'在这里写这一周的备忘、提醒或其他事情…',noteSaved:'已保存 ',noteSaving:'保存中…',noteRO:'这是该员工的备忘录，只能查看。',addDay:'＋ 添加',week:'周计划',exp:'导出 / 导入',xT:'导出、备份与导入',xHint:'选择日期范围。备份文件和 CSV 可以再导入回来，重复的日程会自动跳过。',xFL:'从',xTL:'到',xPdf:'📄 导出 PDF（在打印窗口选「另存为 PDF」）',xCsv:'📊 导出 Excel（CSV 表格）',xJson:'💾 保存备份文件（JSON）',xImp:'📥 导入（CSV 或 JSON）',xClose:'关闭',fromTs:'来自工时表',expDone:'已导出 ',impBad:'读不懂这个文件，请使用导出的 CSV 或 JSON。',impNone:'没有可导入的新日程。',impAsk:'将导入 {n} 条日程（跳过重复 {d} 条，无效 {b} 条）。继续吗？',impDone:'已导入 {n} 条日程。',noRange:'请选择日期范围。',ttl:'日程表',sub:'周末与新西兰公共假期以红色标注 · 已确认的报价单会推送给指派的工人',today:'今天',add:'＋ 添加日程',grid:'月历',list:'列表',langBtn:'EN',
   dow:['一','二','三','四','五','六','日'],months:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
   allEmp:'全部员工',pool:'待安排',poolHint:'报价单已确认，但没有写明工作时间。请自行安排日期和时间。',
   schedule:'安排时间',again:'再安排',done:'已安排',other:'员工日程',weekend:'周末',holiday:'公共假期',mine:'我的日程',
@@ -233,7 +243,7 @@ var T={
   setupHint:'日程表数据库还没有创建。请先在 Supabase 运行 schedule/supabase-setup.sql。',tl:'报价单上的时间：',
   legWe:'周末',legHol:'公共假期',legJob:'已确认项目',legMine:'日程',holTitle:'本月的红日子',noHol:'本月没有公共假期。',
   workers:'工人',unassigned:'未指派工人',jobFor:'来自报价单：',region:'地区',noJobs:'目前没有分配给你的项目。'},
- en:{week:'Week plan',exp:'Export / Import',xT:'Export, backup and import',xHint:'Pick a date range. Backup and CSV files can be imported back; duplicates are skipped.',xFL:'From',xTL:'To',xPdf:'📄 Export PDF (choose “Save as PDF” in the print window)',xCsv:'📊 Export to Excel (CSV)',xJson:'💾 Save backup file (JSON)',xImp:'📥 Import (CSV or JSON)',xClose:'Close',fromTs:'From timesheet',expDone:'Exported ',impBad:'Could not read this file. Use an exported CSV or JSON.',impNone:'Nothing new to import.',impAsk:'Import {n} entries (skipping {d} duplicates, {b} invalid)? ',impDone:'Imported {n} entries.',noRange:'Choose a date range.',ttl:'Schedule',sub:'Weekends and NZ public holidays are red · confirmed quotes are pushed to the assigned workers',today:'Today',add:'+ Add entry',grid:'Month',list:'List',langBtn:'中文',
+ en:{noteT:'📝 Notes for this week',notePh:'Write reminders or anything else for this week…',noteSaved:'Saved ',noteSaving:'Saving…',noteRO:'This is the employee’s note (view only).',addDay:'+ Add',week:'Week plan',exp:'Export / Import',xT:'Export, backup and import',xHint:'Pick a date range. Backup and CSV files can be imported back; duplicates are skipped.',xFL:'From',xTL:'To',xPdf:'📄 Export PDF (choose “Save as PDF” in the print window)',xCsv:'📊 Export to Excel (CSV)',xJson:'💾 Save backup file (JSON)',xImp:'📥 Import (CSV or JSON)',xClose:'Close',fromTs:'From timesheet',expDone:'Exported ',impBad:'Could not read this file. Use an exported CSV or JSON.',impNone:'Nothing new to import.',impAsk:'Import {n} entries (skipping {d} duplicates, {b} invalid)? ',impDone:'Imported {n} entries.',noRange:'Choose a date range.',ttl:'Schedule',sub:'Weekends and NZ public holidays are red · confirmed quotes are pushed to the assigned workers',today:'Today',add:'+ Add entry',grid:'Month',list:'List',langBtn:'中文',
   dow:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   allEmp:'All employees',pool:'To schedule',poolHint:'The quote is confirmed but states no work time. Pick your own date and time.',
   schedule:'Schedule',again:'Schedule again',done:'scheduled',other:'Staff schedule',weekend:'Weekend',holiday:'Public holiday',mine:'My schedule',
@@ -316,7 +326,7 @@ function say(s,bad){var m=$('msg');m.textContent=s||'';m.className='msg'+(bad?' 
 var mode=(function(){var m=lsGet('ye_sched_mode');return m==='list'||m==='week'?m:'grid'})();
 function nzToday(){try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Pacific/Auckland'}).format(new Date())}catch(e){var n=new Date();return iso(n.getFullYear(),n.getMonth(),n.getDate())}}
 var TODAY=nzToday(),vy=+TODAY.slice(0,4),vm=+TODAY.slice(5,7)-1,sel=TODAY;
-var wk=mondayOf(sel);
+var wk=mondayOf(sel),note='',noteOk=true,noteTimer=0;
 var jobs=[],entries=[],jobEntries=[],staff=[],editing=null,editDef=null;
 
 function gridRange(){var first=dow(vy,vm,1);return{s:iso(vy,vm,1-first),e:iso(vy,vm,1-first+41)}}
@@ -365,7 +375,7 @@ function render(){
   renderEmp();renderPool();
   $('gridWrap').hidden=mode!=='grid';$('weekWrap').hidden=mode!=='week';$('listWrap').hidden=mode!=='list';
   if(mode==='grid')renderGrid();else if(mode==='week')renderWeek();else renderList();
-  renderDay();renderHols();printHead()}
+  renderDay();renderHols();printHead();renderMemo();$('day').hidden=mode==='week'}
 function renderEmp(){
   var s=$('emp');if(!isMgr){s.hidden=true;return}
   var cur=s.value,seen={},opts='<option value="">'+esc(t('allEmp'))+'</option>';
@@ -482,30 +492,49 @@ function periodLabel(){
   return lang==='zh'?vy+'年 '+t('months')[vm]:t('months')[vm]+' '+vy}
 function dayLabel(d){var w=dow(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8));return(lang==='zh'?'周'+t('dow')[w]:t('dow')[w])+' '+shortDate(d)}
 function wiHtml(it){
-  var ts=it.e&&it.e.source==='timesheet';
+  var ts=it.e&&it.e.source==='timesheet',btn='';
+  if(it.kind==='entry'&&!ts&&(isMgr||it.e.created_by.toLowerCase()===me))btn='<div><button type="button" class="sm" data-ee="'+esc(it.e.id)+'">'+esc(t('edit'))+'</button></div>';
   return'<div class="wi '+(it.kind==='job'?'job':'')+'"><b>'+esc(it.st?(it.en?it.st+'–'+it.en:it.st):t('tbc'))+(ts?' ⏱':'')+'</b>'
-    +(it.address?'<div>📍 '+esc(it.address)+'</div>':'')+(it.project?'<div>🏗 '+esc(it.project)+'</div>':'')+(it.work?'<div class="ww">'+esc(it.work)+'</div>':'')+'</div>'}
+    +(it.address?'<div>📍 '+esc(it.address)+'</div>':'')+(it.project?'<div>🏗 '+esc(it.project)+'</div>':'')+(it.work?'<div class="ww">'+esc(it.work)+'</div>':'')
+    +(it.kind==='job'&&isMgr?'<div class="ww">👷 '+esc(workersOf(it.j)||t('unassigned'))+'</div>':'')+btn+'</div>'}
 function renderWeek(){
-  var days=[],i;for(i=0;i<7;i++)days.push(addDays(wk,i));
-  var rows=[],f=$('emp').value;
-  var hasJob=days.some(function(d){return itemsOn(d).some(function(it){return it.kind==='job'})});
-  if(hasJob)rows.push({job:true,n:t('legJob')});
-  if(!isMgr)rows.push({k:me,n:t('mine')});
-  else{var seen={},list=[];
-    entries.forEach(function(e){var k=e.owner_email.toLowerCase();if(f&&k!==f)return;if(!seen[k]){seen[k]=1;list.push({k:k,n:e.owner_name||nameOf(k)})}});
-    if(f&&!seen[f])list.push({k:f,n:nameOf(f)});
-    list.sort(function(a,b){return a.n<b.n?-1:1});rows=rows.concat(list)}
-  if(!rows.length)rows.push({k:'',n:'—'});
-  var h='<div class="wk"><div class="wh corner"></div>';
-  days.forEach(function(d,i){var hn=holOf(d);h+='<div class="wh'+(i>=5||hn?' red':'')+(d===TODAY?' tdy':'')+'" data-d="'+d+'">'+esc(dayLabel(d))+(hn?'<small>'+esc(hn)+'</small>':'')+'</div>'});
-  rows.forEach(function(r){
-    h+='<div class="wl">'+(r.job?'🏗 ':'👷 ')+esc(r.n)+'</div>';
-    days.forEach(function(d,i){
-      var its=itemsOn(d).filter(function(it){return r.job?it.kind==='job':(it.kind==='entry'&&it.e.owner_email.toLowerCase()===r.k)}),hn=holOf(d);
-      h+='<div class="wc'+(i>=5?' we':'')+(hn?' hol':'')+(its.length?'':' e')+'" data-day="'+esc(dayLabel(d)+(hn?' · '+hn:''))+'">'+its.map(wiHtml).join('')+'</div>'})});
+  var h='<div class="wv">',i;
+  for(i=0;i<7;i++){
+    var d=addDays(wk,i),hn=holOf(d),its=itemsOn(d);
+    h+='<div class="wd'+(i>=5?' we':'')+(hn?' hol':'')+(d===TODAY?' tdy':'')+'"><div class="wdh" data-d="'+d+'"><b>'+esc(dayLabel(d))+'</b>'
+      +(hn?'<span class="tag" style="margin:0">'+esc(hn)+'</span>':i>=5?'<span class="tag we" style="margin:0">'+esc(t('weekend'))+'</span>':'')
+      +'<button type="button" class="sm" data-add="'+d+'">'+esc(t('addDay'))+'</button></div><div class="wdb">';
+    if(!its.length)h+='<div class="wempty">—</div>';
+    else{
+      its.filter(function(x){return x.kind==='job'}).forEach(function(x){h+=wiHtml(x)});
+      var last='';
+      its.filter(function(x){return x.kind==='entry'}).sort(function(a,b){var A=(a.e.owner_name||a.e.owner_email),B=(b.e.owner_name||b.e.owner_email);return A<B?-1:A>B?1:0}).forEach(function(x){
+        var who=x.e.owner_name||nameOf(x.e.owner_email);
+        if(isMgr&&who!==last){h+='<div class="wgrp">👷 '+esc(who)+'</div>';last=who}
+        h+=wiHtml(x)})}
+    h+='</div></div>'}
   h+='</div>';
-  $('weekWrap').innerHTML=h;
-  Array.prototype.forEach.call($('weekWrap').querySelectorAll('.wh[data-d]'),function(c){c.onclick=function(){sel=c.getAttribute('data-d');renderDay();var el=$('day');if(el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'nearest'})}})}
+  var el=$('weekWrap');el.innerHTML=h;
+  Array.prototype.forEach.call(el.querySelectorAll('[data-add]'),function(b){b.onclick=function(ev){ev.stopPropagation();sel=b.getAttribute('data-add');openForm(null)}});
+  Array.prototype.forEach.call(el.querySelectorAll('.wdh[data-d]'),function(c){c.onclick=function(){sel=c.getAttribute('data-d')}});
+  bindEv(el)}
+/* weekly notes (one note per person per week, saved in the cloud) */
+function noteOwner(){var f=$('emp').value;return isMgr&&f?f:me}
+async function loadNote(){
+  try{var a=await sb('/rest/v1/ye_sched_notes?select=note&owner_email=eq.'+encodeURIComponent(noteOwner())+'&week_start=eq.'+wk)||[];note=a[0]?a[0].note:'';noteOk=true}
+  catch(e){note='';noteOk=false}}
+function renderMemo(){
+  var el=$('memo');el.hidden=mode!=='week';if(mode!=='week')return;
+  var ro=noteOwner()!==me;
+  el.innerHTML='<h2>'+esc(t('noteT'))+'</h2>'+(noteOk?'<textarea id="noteTa" '+(ro?'readonly ':'')+'placeholder="'+esc(t('notePh'))+'" maxlength="5000">'+esc(note)+'</textarea><div class="st" id="noteSt">'+(ro?esc(t('noteRO')):'')+'</div><div class="noteprint">'+esc(note)+'</div>':'<div class="msg bad">'+esc(t('setupHint'))+'</div>');
+  var ta=$('noteTa');if(!ta||ro)return;
+  ta.oninput=function(){
+    note=ta.value;var w=wk,txt=note;$('noteSt').textContent=t('noteSaving');clearTimeout(noteTimer);
+    noteTimer=setTimeout(function(){saveNote(w,txt)},900)}}
+async function saveNote(w,txt){
+  try{await sb('/rest/v1/ye_sched_notes?on_conflict=owner_email,week_start',{method:'POST',body:JSON.stringify({owner_email:me,week_start:w,note:txt,updated_at:new Date().toISOString()}),prefer:'resolution=merge-duplicates,return=minimal'});
+    var s=$('noteSt');if(s&&w===wk)s.textContent=t('noteSaved')+new Date().toLocaleTimeString(lang==='zh'?'zh-CN':'en-NZ',{hour:'2-digit',minute:'2-digit'})}
+  catch(e){var s2=$('noteSt');if(s2)s2.textContent=t('saveFail')+netMsg(e)}}
 function printHead(){
   var f=$('emp').value,who=isMgr&&f?' · '+nameOf(f):(isMgr?' · '+t('allEmp'):' · '+(myName||me));
   var rn='';REGIONS.forEach(function(r){if(r[0]===region)rn=lang==='zh'?r[2]:r[1]});
@@ -577,7 +606,7 @@ async function doImport(file){
 
 /* ---------- wiring ---------- */
 function shift(n){if(mode==='week'){wk=addDays(wk,7*n);var mid=addDays(wk,3);vy=+mid.slice(0,4);vm=+mid.slice(5,7)-1;if(sel<wk||sel>addDays(wk,6))sel=wk}else{vm+=n;if(vm<0){vm=11;vy--}if(vm>11){vm=0;vy++}}reload()}
-async function reload(){try{await loadEntries()}catch(e){say(t('loadFail')+netMsg(e),true)}render()}
+async function reload(){try{await loadEntries();if(mode==='week')await loadNote()}catch(e){say(t('loadFail')+netMsg(e),true)}render()}
 $('prev').onclick=function(){shift(-1)};$('next').onclick=function(){shift(1)};
 $('today').onclick=function(){vy=+TODAY.slice(0,4);vm=+TODAY.slice(5,7)-1;sel=TODAY;wk=mondayOf(TODAY);reload()};
 $('add').onclick=function(){openForm(null)};
@@ -585,7 +614,7 @@ function setMode(m){mode=m;lsSet('ye_sched_mode',mode);if(m==='week'){wk=mondayO
 $('vGrid').onclick=function(){setMode('grid')};$('vWeek').onclick=function(){setMode('week')};$('vList').onclick=function(){setMode('list')};
 $('lang').onclick=function(){lang=lang==='zh'?'en':'zh';lsSet('ye_sched_lang',lang);render()};
 $('region').onchange=function(){region=$('region').value;lsSet('ye_sched_region',region);render()};
-$('emp').onchange=render;
+$('emp').onchange=function(){if(mode==='week')reload();else render()};
 $('exp').onclick=openExp;$('xClose').onclick=function(){$('xmodal').hidden=true};$('xPdf').onclick=doPdf;$('xCsv').onclick=function(){doExport('csv')};$('xJson').onclick=function(){doExport('json')};$('xImp').onclick=function(){$('xFile').click()};$('xFile').onchange=function(){if(this.files[0])doImport(this.files[0]);this.value=''};
 $('xmodal').addEventListener('mousedown',function(e){if(e.target===$('xmodal'))$('xmodal').hidden=true});
 $('form').onsubmit=saveForm;$('fCancel').onclick=closeForm;$('fDel').onclick=delForm;
@@ -601,6 +630,7 @@ async function boot(){
     await loadStaff();
     if(isMgr){try{await syncJobs()}catch(e){say(t('syncFail')+netMsg(e),true);failed=true}}
     await Promise.all([loadJobs(),loadEntries()]);
+    if(mode==='week')await loadNote();
     if(!failed)say('');
   }catch(e){say(t('loadFail')+netMsg(e),true)}
   render()}
