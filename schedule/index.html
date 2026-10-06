@@ -100,6 +100,13 @@ select{min-height:42px;padding:0 10px;border:1px solid var(--line);border-radius
 .box input:focus,.box textarea:focus,.box select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(53,109,183,.22)}
 .box textarea{min-height:76px;resize:vertical}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* date pickers always read day/month/year (NZ), whatever the phone's own language is */
+input[type=date]{-webkit-appearance:none;appearance:none;text-align:left;min-height:44px}
+.nzd{position:relative;display:block}
+.nzd input[type=date]{color:transparent!important;caret-color:transparent}
+.nzd input[type=date]::-webkit-datetime-edit{opacity:0}
+.nzd-t{position:absolute;left:0;top:0;bottom:0;right:40px;display:flex;align-items:center;padding-left:12px;pointer-events:none;white-space:nowrap;overflow:hidden;font-size:16px;color:var(--ink)}
+.nzd-t.ph{color:#8a96a8}
 .box .acts{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap}
 .box .acts #fDel{margin-right:auto}
 @media(max-width:700px){
@@ -377,6 +384,18 @@ function lineHtml(it){return'<div class="l">📍 <b>'+esc(it.address||t('noAddr'
 function chipText(it){var who=(isMgr&&it.kind==='entry')?(it.e.owner_name||nameOf(it.e.owner_email)).split(' ')[0]+': ':'';return who+(it.st?it.st+' ':'')+(it.address||it.project||it.work||'')}
 function workersOf(j){var a=(j.assignees||[]).map(nameOf).concat((j.casuals||[]).map(function(c){return c+(lang==='zh'?'（临时）':' (casual)')}));return a.join(', ')}
 
+/* ---------- dates are always shown NZ style: day/month/year ---------- */
+function dmy(d){return d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4)}
+function nzShow(i){
+  if(!i._nz){var w=document.createElement('span');w.className='nzd';i.parentNode.insertBefore(w,i);w.appendChild(i);
+    var s=document.createElement('span');s.className='nzd-t';w.appendChild(s);i._nz=s;
+    var open=function(){try{if(i.showPicker)i.showPicker()}catch(e){}};
+    i.addEventListener('click',open);
+    i.addEventListener('keydown',function(e){if(e.key==='Tab'||e.key==='Escape')return;e.preventDefault();if(e.key==='Enter'||e.key===' ')open();if(e.key==='Backspace'||e.key==='Delete'){i.value='';nzShow(i)}});
+    i.addEventListener('input',function(){nzShow(i)});i.addEventListener('change',function(){nzShow(i)})}
+  i._nz.textContent=i.value?dmy(i.value):'DD/MM/YYYY';i._nz.className='nzd-t'+(i.value?'':' ph')}
+function syncDates(){['fD','fE','xFrom','xTo'].forEach(function(k){nzShow($(k))})}
+
 /* ---------- render ---------- */
 function render(){
   $('ttl').textContent=t('ttl');$('sub').textContent=t('sub');$('today').textContent=t('today');$('add').textContent=t('add');
@@ -429,7 +448,7 @@ function renderGrid(){
 function dayTitle(d){
   var y=+d.slice(0,4),m=+d.slice(5,7),dn=+d.slice(8),w=dow(y,m-1,dn),hn=holOf(d);
   var wk=lang==='zh'?'周'+t('dow')[w]:t('dow')[w];
-  var txt=lang==='zh'?y+'年'+m+'月'+dn+'日 '+wk:wk+' '+dn+' '+t('months')[m-1]+' '+y;
+  var txt=lang==='zh'?wk+' '+dmy(d):wk+' '+dn+' '+t('months')[m-1]+' '+y;
   return'<div class="dayh'+(w>=5||hn?' red':'')+'">'+esc(txt)+(hn?'<span class="tag">'+esc(hn)+'</span>':w>=5?'<span class="tag we">'+esc(t('weekend'))+'</span>':'')+'</div>'}
 function evHtml(it){
   var h='<div class="ev '+it.kind+'">';
@@ -446,7 +465,7 @@ function renderDay(){
 function renderHols(){
   var last=iso(vy,vm+1,0),h='<h2>'+esc(t('holTitle'))+'</h2>',n=0,H=holidays(vy,region);
   for(var d=iso(vy,vm,1);d<=last;d=iso(vy,vm,+d.slice(8)+1)){var o=H[d];if(!o)continue;n++;
-    var w=dow(vy,vm,+d.slice(8)),day=lang==='zh'?(vm+1)+'月'+(+d.slice(8))+'日 周'+t('dow')[w]:t('dow')[w]+' '+(+d.slice(8))+' '+t('months')[vm].slice(0,3);
+    var w=dow(vy,vm,+d.slice(8)),day=lang==='zh'?'周'+t('dow')[w]+' '+dmy(d).slice(0,5):t('dow')[w]+' '+(+d.slice(8))+' '+t('months')[vm].slice(0,3);
     h+=(n===1?'<ul class="hlist">':'')+'<li><span class="d">'+esc(day)+'</span><span>'+esc(o[lang])+'</span></li>'}
   h+=n?'</ul>':'<div class="msg">'+esc(t('noHol'))+'</div>';
   $('hols').innerHTML=h}
@@ -475,7 +494,7 @@ function openForm(e,def){
     var opt=function(em,nm){em=em.toLowerCase();if(!em||seen[em])return;seen[em]=1;o+='<option value="'+esc(em)+'">'+esc(nm||em)+'</option>'};
     opt(me,myName||me);staff.forEach(function(x){opt(x.email,x.name)});if(e)opt(e.owner_email,e.owner_name);if(d.owner)opt(d.owner,nameOf(d.owner));
     s.innerHTML=o;s.value=e?e.owner_email.toLowerCase():(d.owner||$('emp').value||me)}
-  $('modal').hidden=false;$('fD').focus()}
+  syncDates();$('modal').hidden=false;$('fD').focus()}
 function closeForm(){$('modal').hidden=true}
 async function saveForm(ev){
   ev.preventDefault();var fm=$('fMsg');fm.textContent='';
@@ -500,10 +519,10 @@ async function delForm(){
 function mondayOf(d){var y=+d.slice(0,4),m=+d.slice(5,7)-1,dd=+d.slice(8);return iso(y,m,dd-dow(y,m,dd))}
 function addDays(d,n){return iso(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8)+n)}
 function curRange(){return mode==='week'?{s:wk,e:addDays(wk,6)}:gridRange()}
-function shortDate(d){return lang==='zh'?(+d.slice(5,7))+'月'+(+d.slice(8))+'日':(+d.slice(8))+' '+t('months')[+d.slice(5,7)-1].slice(0,3)}
+function shortDate(d){return lang==='zh'?dmy(d).slice(0,5):(+d.slice(8))+' '+t('months')[+d.slice(5,7)-1].slice(0,3)}
 function periodLabel(){
-  if(mode==='week'){var b=addDays(wk,6);return lang==='zh'?wk.slice(0,4)+'年 '+shortDate(wk)+' – '+shortDate(b):shortDate(wk)+' – '+shortDate(b)+' '+b.slice(0,4)}
-  return lang==='zh'?vy+'年 '+t('months')[vm]:t('months')[vm]+' '+vy}
+  if(mode==='week'){var b=addDays(wk,6);return lang==='zh'?dmy(wk)+' – '+dmy(b):shortDate(wk)+' – '+shortDate(b)+' '+b.slice(0,4)}
+  return t('months')[vm]+' '+vy}
 function dayLabel(d){var w=dow(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8));return(lang==='zh'?'周'+t('dow')[w]:t('dow')[w])+' '+shortDate(d)}
 function wiHtml(it){
   var ts=it.e&&it.e.source==='timesheet',btn='';
@@ -562,7 +581,7 @@ function xmsg(s,bad){var m=$('xMsg');m.textContent=s||'';m.className='msg'+(bad?
 function openExp(){
   var r=curRange(),first=mode==='week'?r.s:iso(vy,vm,1),last=mode==='week'?r.e:iso(vy,vm+1,0);
   ['xT','xHint','xFL','xTL','xPdf','xCsv','xJson','xImp','xClose'].forEach(function(k){$(k).textContent=t(k)});
-  $('xFrom').value=first;$('xTo').value=last;xmsg('');$('xmodal').hidden=false}
+  $('xFrom').value=first;$('xTo').value=last;syncDates();xmsg('');$('xmodal').hidden=false}
 function doPdf(){
   $('xmodal').hidden=true;var old=document.title;
   document.title='YE-Schedule-'+periodLabel().replace(/[^\w一-鿿]+/g,'-');
