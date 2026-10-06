@@ -16,7 +16,7 @@ Run `schedule/supabase-setup.sql` in Supabase → SQL Editor (safe to re-run). I
 - Entries are `address · project · time` plus the work to do. Anyone can add their own.
 - **Timesheet link**: every shift on a timesheet (date, start–finish, site address) is copied to that worker's Schedule each time the draft saves (⏱ mark, edit it in the Timesheet). If the address matches an assigned job, the project name is filled in.
 - **Week plan**: Month / Week / List views. The week view is a table (office: one row per employee plus a row for confirmed jobs; staff: their own row).
-- **Export / Import** (button in the toolbar): PDF (print window → Save as PDF; landscape A4 with logo), Excel-ready CSV, and a JSON backup. CSV/JSON can be imported back (columns `employee_email,employee_name,date,end_date,start_time,end_time,address,project,work`; dates `YYYY-MM-DD` or `DD/MM/YYYY`). Duplicates are skipped; staff can only import into their own schedule.
+- **Export / Import** (button in the toolbar): PDF (print window → Save as PDF; landscape A4 with logo), Excel-ready CSV, and a JSON backup. CSV/JSON can be imported back (columns `employee_email,employee_name,date,end_date,start_time,end_time,address,project,work`; dates are written `DD/MM/YYYY` in the CSV; `YYYY-MM-DD` is also accepted on import). Duplicates are skipped; staff can only import into their own schedule.
 - The Schedule page, when opened by an office account, also reconciles `ye_sched_jobs` with all Signed/Paid quotes.
 
 ## Who sees what

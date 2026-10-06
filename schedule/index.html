@@ -609,7 +609,7 @@ async function doExport(kind){
   var s=$('xFrom').value,e=$('xTo').value;if(!s||!e||e<s){xmsg(t('noRange'),true);return}
   xmsg(t('loading'));
   try{var rows=outRows(await fetchRange(s,e,false)),nm='YE-Schedule-'+s+'_'+e;
-    if(kind==='csv')download(nm+'.csv','﻿'+COLS.join(',')+'\r\n'+rows.map(function(r){return COLS.map(function(c){return csvCell(r[c])}).join(',')}).join('\r\n'),'text/csv;charset=utf-8');
+    if(kind==='csv'){rows.forEach(function(r){r.date=dmy(r.date);r.end_date=dmy(r.end_date)});download(nm+'.csv','﻿'+COLS.join(',')+'\r\n'+rows.map(function(r){return COLS.map(function(c){return csvCell(r[c])}).join(',')}).join('\r\n'),'text/csv;charset=utf-8')}
     else download(nm+'.json',JSON.stringify({app:'YE-Schedule',version:1,exported:new Date().toISOString(),from:s,to:e,entries:rows},null,1),'application/json');
     xmsg(t('expDone')+rows.length)}
   catch(er){xmsg(netMsg(er),true)}}
