@@ -368,7 +368,11 @@ async function loadStaff(){
   try{var a=await sb('/rest/v1/ye_staff?select=email,name&order=email')||[];staff=a.map(function(s){return{email:(s.email||'').toLowerCase(),name:s.name||''}});
     var mine=staff.filter(function(s){return s.email===me})[0];if(mine&&mine.name)myName=mine.name}catch(e){}
   if(!myName)myName=me.split('@')[0]}
-function nameOf(email){email=(email||'').toLowerCase();var s=staff.filter(function(x){return x.email===email})[0];return(s&&s.name)||email.split('@')[0]}
+function staffName(email){email=(email||'').toLowerCase();var s=staff.filter(function(x){return x.email===email})[0];return(s&&s.name)||''}
+function nameOf(email){return staffName(email)||(email||'').toLowerCase().split('@')[0]}
+/* the person an entry belongs to: always the name on the staff list for that email, so one person has one name
+   everywhere (older entries stored whatever name was typed at the time) */
+function whoOf(e){return staffName(e.owner_email)||e.owner_name||nameOf(e.owner_email)}
 
 /* ---------- item helpers ---------- */
 function timeStr(st,en){return st?(en?st+'–'+en:st):t('tbc')}
@@ -381,7 +385,7 @@ function itemsOn(date){
   return out}
 function pool(){return jobs.filter(function(j){return !j.start_date})}
 function lineHtml(it){return'<div class="l">📍 <b>'+esc(it.address||t('noAddr'))+'</b> · 🏗 '+esc(it.project||t('noProj'))+' · 🕐 '+esc(timeStr(it.st,it.en))+'</div>'}
-function chipText(it){var who=(isMgr&&it.kind==='entry')?(it.e.owner_name||nameOf(it.e.owner_email)).split(' ')[0]+': ':'';return who+(it.st?it.st+' ':'')+(it.address||it.project||it.work||'')}
+function chipText(it){var who=(isMgr&&it.kind==='entry')?whoOf(it.e).split(' ')[0]+': ':'';return who+(it.st?it.st+' ':'')+(it.address||it.project||it.work||'')}
 function workersOf(j){var a=(j.assignees||[]).map(nameOf).concat((j.casuals||[]).map(function(c){return c+(lang==='zh'?'（临时）':' (casual)')}));return a.join(', ')}
 
 /* ---------- dates are always shown NZ style: day/month/year ---------- */
@@ -413,7 +417,7 @@ function renderEmp(){
   var s=$('emp');if(!isMgr){s.hidden=true;return}
   var cur=s.value,seen={},opts='<option value="">'+esc(t('allEmp'))+'</option>';
   staff.forEach(function(x){seen[x.email]=1;opts+='<option value="'+esc(x.email)+'">'+esc(x.name||x.email)+'</option>'});
-  entries.forEach(function(e){var k=e.owner_email.toLowerCase();if(!seen[k]){seen[k]=1;opts+='<option value="'+esc(k)+'">'+esc(e.owner_name||k)+'</option>'}});
+  entries.forEach(function(e){var k=e.owner_email.toLowerCase();if(!seen[k]){seen[k]=1;opts+='<option value="'+esc(k)+'">'+esc(whoOf(e))+'</option>'}});
   if(!seen[me])opts+='<option value="'+esc(me)+'">'+esc(myName||me)+'</option>';
   s.innerHTML=opts;s.value=cur;s.hidden=false}
 function renderPool(){
@@ -454,7 +458,7 @@ function evHtml(it){
   var h='<div class="ev '+it.kind+'">';
   if(it.kind==='job'){var w=workersOf(it.j);h+='<div class="who">'+esc(t('jobTag'))+(it.j.doc_no?' · '+esc(it.j.doc_no):'')+'</div>'+lineHtml(it)+(it.j.timeline?'<div class="w">🗓 '+esc(t('tl'))+esc(it.j.timeline)+'</div>':'')+(isMgr?'<div class="w">👷 '+(w?esc(w):esc(t('unassigned')))+'</div>':'')}
   else{var e=it.e,mine=e.owner_email.toLowerCase()===me,canEdit=(isMgr||e.created_by.toLowerCase()===me)&&e.source!=='timesheet';
-    h+='<div class="who">'+(isMgr||!mine?esc(e.owner_name||nameOf(e.owner_email)):esc(t('mine')))+(e.created_by.toLowerCase()!==e.owner_email.toLowerCase()?' · '+esc(t('byOffice')):'')+(e.source==='timesheet'?' · ⏱ '+esc(t('fromTs')):'')+'</div>'+lineHtml(it)+(e.work?'<div class="w">'+esc(e.work)+'</div>':'')
+    h+='<div class="who">'+(isMgr||!mine?esc(whoOf(e)):esc(t('mine')))+(e.created_by.toLowerCase()!==e.owner_email.toLowerCase()?' · '+esc(t('byOffice')):'')+(e.source==='timesheet'?' · ⏱ '+esc(t('fromTs')):'')+'</div>'+lineHtml(it)+(e.work?'<div class="w">'+esc(e.work)+'</div>':'')
       +(canEdit?'<div class="acts"><button type="button" class="sm" data-ee="'+esc(e.id)+'">'+esc(t('edit'))+'</button></div>':'')}
   return h+'</div>'}
 function bindEv(root){Array.prototype.forEach.call(root.querySelectorAll('[data-ee]'),function(b){b.onclick=function(){var e=entries.filter(function(x){return x.id===b.getAttribute('data-ee')})[0];if(e)openForm(e)}})}
@@ -492,7 +496,7 @@ function openForm(e,def){
   $('fEmpW').hidden=!isMgr;
   if(isMgr){var s=$('fEmp'),seen={},o='';
     var opt=function(em,nm){em=em.toLowerCase();if(!em||seen[em])return;seen[em]=1;o+='<option value="'+esc(em)+'">'+esc(nm||em)+'</option>'};
-    opt(me,myName||me);staff.forEach(function(x){opt(x.email,x.name)});if(e)opt(e.owner_email,e.owner_name);if(d.owner)opt(d.owner,nameOf(d.owner));
+    opt(me,myName||me);staff.forEach(function(x){opt(x.email,x.name)});if(e)opt(e.owner_email,whoOf(e));if(d.owner)opt(d.owner,nameOf(d.owner));
     s.innerHTML=o;s.value=e?e.owner_email.toLowerCase():(d.owner||$('emp').value||me)}
   syncDates();$('modal').hidden=false;$('fD').focus()}
 function closeForm(){$('modal').hidden=true}
@@ -542,8 +546,8 @@ function renderWeek(){
     else{
       its.filter(function(x){return x.kind==='job'}).forEach(function(x){h+=wiHtml(x)});
       var last='';
-      its.filter(function(x){return x.kind==='entry'}).sort(function(a,b){var A=(a.e.owner_name||a.e.owner_email),B=(b.e.owner_name||b.e.owner_email);return A<B?-1:A>B?1:0}).forEach(function(x){
-        var who=x.e.owner_name||nameOf(x.e.owner_email);
+      its.filter(function(x){return x.kind==='entry'}).sort(function(a,b){var A=whoOf(a.e),B=whoOf(b.e);return A<B?-1:A>B?1:0}).forEach(function(x){
+        var who=whoOf(x.e);
         if(isMgr&&who!==last){h+='<div class="wgrp">👷 '+esc(who)+'</div>';last=who}
         h+=wiHtml(x)})}
     h+='</div></div>'}
@@ -591,7 +595,7 @@ async function fetchRange(s,e,all){
   var a=await sbAll('/rest/v1/ye_sched_entries?select=*&work_date=lte.'+e+'&end_date=gte.'+s+'&order=work_date.asc,start_time.asc,id.asc');
   var f=$('emp').value;if(!all&&isMgr&&f)a=a.filter(function(x){return x.owner_email.toLowerCase()===f});return a}
 var COLS=['employee_email','employee_name','date','end_date','start_time','end_time','address','project','work'];
-function outRows(a){return a.map(function(e){return{employee_email:e.owner_email,employee_name:e.owner_name,date:e.work_date,end_date:e.end_date,start_time:e.start_time,end_time:e.end_time,address:e.address,project:e.project,work:e.work}})}
+function outRows(a){return a.map(function(e){return{employee_email:e.owner_email,employee_name:whoOf(e),date:e.work_date,end_date:e.end_date,start_time:e.start_time,end_time:e.end_time,address:e.address,project:e.project,work:e.work}})}
 function csvCell(v){v=String(v==null?'':v);return/[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
 function csvParse(txt){
   var rows=[],row=[],cur='',q=false,i,c;
@@ -673,7 +677,7 @@ async function syncTimesheets(){
       var loc=String(s[4]||'').trim(),cow=String(s[5]||'').trim();
       /* only the jobs this worker is assigned to (the same ones their own Timesheet can see) */
       var job=YESched.matchJob(jobs.filter(function(j){return(j.assignees||[]).indexOf(email)>=0}),loc);
-      var row={owner_email:email,owner_name:r.employee||email.split('@')[0],created_by:email,work_date:date,end_date:date,start_time:String(s[1]||''),end_time:String(s[2]||''),address:loc,
+      var row={owner_email:email,owner_name:staffName(email)||r.employee||email.split('@')[0],created_by:email,work_date:date,end_date:date,start_time:String(s[1]||''),end_time:String(s[2]||''),address:loc,
         project:job?(job.project||''):'',work:'Timesheet 工时表'+(cow?' · '+cow:''),job_id:job?job.job_id:null,source:'timesheet',ts_id:String(r.id)};
       want[key(row)]=row})});
   var have=await sbAll('/rest/v1/ye_sched_entries?select=id,work_date,start_time,end_time,address,ts_id,job_id&source=eq.timesheet&order=id.asc');
