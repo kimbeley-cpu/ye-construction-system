@@ -40,6 +40,10 @@ create table if not exists public.ye_sched_entries (
   updated_at  timestamptz not null default now(),
   check (end_date >= work_date)
 );
+-- where an entry came from: manual, import or timesheet (the Timesheet adds each shift here)
+alter table public.ye_sched_entries add column if not exists source text not null default 'manual';
+alter table public.ye_sched_entries add column if not exists ts_id  text;
+create index if not exists ye_sched_entries_ts_idx on public.ye_sched_entries(ts_id);
 create index if not exists ye_sched_entries_date_idx  on public.ye_sched_entries(work_date, end_date);
 create index if not exists ye_sched_entries_owner_idx on public.ye_sched_entries(lower(owner_email));
 

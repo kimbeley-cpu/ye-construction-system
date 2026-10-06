@@ -680,6 +680,21 @@ function summary(d){let h=0;[...shiftList.children].forEach(c=>h+=Number(c.datas
   const x=d.exp.reduce((a,e)=>a+(parseFloat(e.amt)||0),0);
   return{employee:str(d.f.employeeName).trim(),period_start:d.f.periodStart||null,period_end:d.f.periodEnd||null,hours:+h.toFixed(2),expense:+x.toFixed(2)}}
 
+/* Schedule link: every shift on this timesheet shows on the worker's Schedule (address, start-finish time).
+   Rows are replaced each time the draft is saved, so edits and removed shifts follow. */
+let schedJobs=null;
+const normA=s=>String(s||'').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g,'');
+async function schedFromTs(d,id){
+  if(!ts.ses||!id||!ts.ses.email)return;
+  const me=ts.ses.email.toLowerCase(),name=str(d.f.employeeName).trim()||me.split('@')[0];
+  if(schedJobs===null){try{schedJobs=await tsFetch('/rest/v1/ye_sched_jobs?select=job_id,project,address&limit=500')||[]}catch(e){schedJobs=[]}}
+  const rows=[];
+  d.shifts.forEach(s=>{const date=str(s[0]);if(!/^\d{4}-\d\d-\d\d$/.test(date))return;
+    const loc=str(s[4]).trim(),na=normA(loc),job=na.length>=6?schedJobs.find(j=>{const a=normA(j.address);return a.length>=6&&(a.includes(na)||na.includes(a))}):null,cow=str(s[5]).trim();
+    rows.push({owner_email:me,owner_name:name,created_by:me,work_date:date,end_date:date,start_time:str(s[1]),end_time:str(s[2]),address:loc,project:job?(job.project||''):'',work:'Timesheet 工时表'+(cow?' · '+cow:''),job_id:job?job.job_id:null,source:'timesheet',ts_id:String(id)})});
+  await tsFetch('/rest/v1/ye_sched_entries?ts_id=eq.'+id+'&source=eq.timesheet',{method:'DELETE'});
+  if(rows.length)await tsFetch('/rest/v1/ye_sched_entries',{method:'POST',body:JSON.stringify(rows),prefer:'return=representation'})}
+
 /* draft kept in the cloud so it follows the employee to another device */
 function save(){if(TEMP||ts.view)return;saveLocal();tsTouch()}
 function tsTouch(){if(!canUse()||ts.view)return;clearTimeout(ts.timer);ts.timer=setTimeout(()=>tsPushDraft().catch(()=>{}),Math.max(4000,20000-(Date.now()-ts.lastPush)))}
@@ -692,10 +707,11 @@ async function tsPushDraft(status){
     if(!row){if(!body.status)body.status='draft';const a=await tsFetch(TS_T+'?select=id,status',{method:'POST',body:JSON.stringify(body),prefer:'return=representation'});row=a&&a[0]}
     if(!row)throw new Error('The record could not be saved.');
     ts.cur=row.id;lsSet('ye_ts_cur',ts.cur);ts.lastPush=Date.now();
+    schedFromTs(d,row.id).catch(()=>{});
     if(!status)tsBar('Draft also saved to the office at '+new Date().toLocaleTimeString('en-NZ',{hour:'numeric',minute:'2-digit'}));
     return row}
   catch(e){if(status)throw e;tsBar(netMsg(e)+' Your draft is still saved on this device.',true)}}
-async function tsDropDraft(){if(canUse()&&ts.cur){try{await tsFetch(TS_T+'?id=eq.'+ts.cur+'&status=in.(draft,returned)',{method:'DELETE'})}catch(e){}}ts.cur=null;lsSet('ye_ts_cur',null)}
+async function tsDropDraft(){if(canUse()&&ts.cur){try{await tsFetch(TS_T+'?id=eq.'+ts.cur+'&status=in.(draft,returned)',{method:'DELETE'});await tsFetch('/rest/v1/ye_sched_entries?ts_id=eq.'+ts.cur+'&source=eq.timesheet',{method:'DELETE'})}catch(e){}}ts.cur=null;lsSet('ye_ts_cur',null)}
 async function tsLoadDraft(){
   const a=await tsFetch(TS_T+'?select=id,status,manager_note,data&user_id=eq.'+ts.ses.uid+'&status=in.(draft,returned)&order=updated_at.desc&limit=1');
   const row=a&&a[0],local=lsGet(KEY);

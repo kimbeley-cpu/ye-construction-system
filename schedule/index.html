@@ -119,8 +119,38 @@ select{min-height:42px;padding:0 10px;border:1px solid var(--line);border-radius
   .modal{align-items:flex-end;padding:0}
   .box{border-radius:18px 18px 0 0;max-width:none;margin:0;max-height:94vh;overflow:auto;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
 }
+
+/* week plan */
+.wk{display:grid;grid-template-columns:130px repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--paper);box-shadow:0 2px 10px rgba(36,71,127,.06)}
+.wh{background:var(--deep);color:#fff;text-align:center;font-weight:700;font-size:13px;padding:8px 4px;cursor:pointer}
+.wh.red{background:var(--red)}.wh.tdy{box-shadow:inset 0 -4px 0 var(--sky)}.wh.corner{cursor:default}
+.wh small{display:block;font-weight:400;font-size:10.5px;line-height:1.2;margin-top:2px}
+.wl{padding:8px;font-weight:700;color:var(--deep);font-size:13px;background:#f1f5fb;border-top:1px solid var(--line);word-break:break-word}
+.wc{border-top:1px solid var(--line);border-left:1px solid var(--line);padding:5px;min-height:74px;font-size:12px}
+.wc.we{background:var(--redbg)}.wc.hol{background:var(--redbg2)}
+.wi{border-left:3px solid var(--green);background:var(--greenbg);border-radius:6px;padding:4px 6px;margin-bottom:5px;line-height:1.35;word-break:break-word}
+.wi.job{border-left-color:var(--deep);background:var(--jobbg)}
+.wi b{color:var(--deep);font-size:12px}.wi .ww{color:#374559;white-space:pre-wrap}
+.printhead{display:none}
+.xbtn{display:block;width:100%;text-align:left;margin-top:8px;min-height:46px}
+.xrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:700px){
+  .wk{grid-template-columns:1fr}.wh{display:none}.wl{border-top:2px solid var(--deep)}
+  .wc{border-left:0;min-height:0;padding:6px 10px}.wc::before{content:attr(data-day);display:block;font-weight:700;font-size:12px;color:var(--mute);margin-bottom:3px}
+  .wc.we::before,.wc.hol::before{color:var(--red)}.wc.e{display:none}
+}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
-@media print{.top,.tools,.pool,.legend,#yeNav,.acts{display:none!important}body{background:#fff}}
+@page{size:A4 landscape;margin:10mm}
+@media print{
+  .top,.tools,.pool,.legend,#yeNav,.acts,#day,.msg,.modal,.hero{display:none!important}
+  body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  main{max-width:none;padding:0}
+  .printhead{display:flex!important;align-items:center;gap:14px;border-bottom:3px solid var(--blue);padding-bottom:8px;margin-bottom:10px}
+  .printhead img{width:150px;height:auto}.printhead b{font-size:18px;color:var(--deep)}.printhead div{font-size:13px;color:var(--mute)}
+  .grid,.wk,.card{box-shadow:none;break-inside:avoid}
+  .cell{min-height:84px}.chip,.more,.hn{display:block!important}.dots{display:none!important}
+  .hols,#hols{break-inside:avoid}
+}
 </style>
 </head>
 <body>
@@ -131,14 +161,15 @@ select{min-height:42px;padding:0 10px;border:1px solid var(--line);border-radius
     <div class="tx"><h1 id="ttl"></h1><p id="sub"></p></div>
   </header>
 
+  <div class="printhead" id="phead"></div>
   <div class="tools">
     <div class="nav"><button id="prev" type="button" aria-label="Previous month">‹</button><div class="month" id="mlabel" aria-live="polite"></div><button id="next" type="button" aria-label="Next month">›</button></div>
     <button id="today" type="button"></button>
     <span class="sp"></span>
     <select id="emp" hidden aria-label="Employee"></select>
     <select id="region" aria-label="Region"></select>
-    <div class="seg"><button id="vGrid" type="button"></button><button id="vList" type="button"></button></div>
-    <button id="lang" type="button"></button>
+    <div class="seg"><button id="vGrid" type="button"></button><button id="vWeek" type="button"></button><button id="vList" type="button"></button></div>
+    <button id="exp" type="button"></button><button id="lang" type="button"></button>
     <button id="add" type="button" class="pri"></button>
   </div>
   <div class="msg" id="msg" role="status"></div>
@@ -146,12 +177,22 @@ select{min-height:42px;padding:0 10px;border:1px solid var(--line);border-radius
   <section class="card pool" id="pool"></section>
 
   <div id="gridWrap"><div class="grid" id="grid"></div></div>
+  <div id="weekWrap" hidden></div>
   <div id="listWrap" hidden></div>
   <div class="legend" id="legend"></div>
 
   <section class="card" id="day"></section>
   <section class="card" id="hols"></section>
 </main>
+
+<div class="modal" id="xmodal" hidden><div class="box">
+  <h2 id="xT"></h2><div class="jobnote" id="xHint"></div>
+  <div class="xrow"><div><label id="xFL" for="xFrom"></label><input type="date" id="xFrom"></div><div><label id="xTL" for="xTo"></label><input type="date" id="xTo"></div></div>
+  <button type="button" class="xbtn" id="xPdf"></button><button type="button" class="xbtn" id="xCsv"></button><button type="button" class="xbtn" id="xJson"></button><button type="button" class="xbtn" id="xImp"></button>
+  <input type="file" id="xFile" accept=".csv,.json,text/csv,application/json" hidden>
+  <div class="msg" id="xMsg" role="status" style="margin-top:10px"></div>
+  <div class="acts"><button type="button" id="xClose"></button></div>
+</div></div>
 
 <div class="modal" id="modal" hidden><form class="box" id="form" novalidate>
   <h2 id="fT"></h2>
@@ -180,7 +221,7 @@ function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){retur
 /* ---------- language ---------- */
 var lang=(function(){var q=new URLSearchParams(location.search).get('lang');if(q==='zh'||q==='en')return q;var s=lsGet('ye_sched_lang');return s==='en'?'en':'zh'})();
 var T={
- zh:{ttl:'日程表',sub:'周末与新西兰公共假期以红色标注 · 已确认的报价单会推送给指派的工人',today:'今天',add:'＋ 添加日程',grid:'月历',list:'列表',langBtn:'EN',
+ zh:{week:'周计划',exp:'导出 / 导入',xT:'导出、备份与导入',xHint:'选择日期范围。备份文件和 CSV 可以再导入回来，重复的日程会自动跳过。',xFL:'从',xTL:'到',xPdf:'📄 导出 PDF（在打印窗口选「另存为 PDF」）',xCsv:'📊 导出 Excel（CSV 表格）',xJson:'💾 保存备份文件（JSON）',xImp:'📥 导入（CSV 或 JSON）',xClose:'关闭',fromTs:'来自工时表',expDone:'已导出 ',impBad:'读不懂这个文件，请使用导出的 CSV 或 JSON。',impNone:'没有可导入的新日程。',impAsk:'将导入 {n} 条日程（跳过重复 {d} 条，无效 {b} 条）。继续吗？',impDone:'已导入 {n} 条日程。',noRange:'请选择日期范围。',ttl:'日程表',sub:'周末与新西兰公共假期以红色标注 · 已确认的报价单会推送给指派的工人',today:'今天',add:'＋ 添加日程',grid:'月历',list:'列表',langBtn:'EN',
   dow:['一','二','三','四','五','六','日'],months:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
   allEmp:'全部员工',pool:'待安排',poolHint:'报价单已确认，但没有写明工作时间。请自行安排日期和时间。',
   schedule:'安排时间',again:'再安排',done:'已安排',other:'员工日程',weekend:'周末',holiday:'公共假期',mine:'我的日程',
@@ -192,7 +233,7 @@ var T={
   setupHint:'日程表数据库还没有创建。请先在 Supabase 运行 schedule/supabase-setup.sql。',tl:'报价单上的时间：',
   legWe:'周末',legHol:'公共假期',legJob:'已确认项目',legMine:'日程',holTitle:'本月的红日子',noHol:'本月没有公共假期。',
   workers:'工人',unassigned:'未指派工人',jobFor:'来自报价单：',region:'地区',noJobs:'目前没有分配给你的项目。'},
- en:{ttl:'Schedule',sub:'Weekends and NZ public holidays are red · confirmed quotes are pushed to the assigned workers',today:'Today',add:'+ Add entry',grid:'Month',list:'List',langBtn:'中文',
+ en:{week:'Week plan',exp:'Export / Import',xT:'Export, backup and import',xHint:'Pick a date range. Backup and CSV files can be imported back; duplicates are skipped.',xFL:'From',xTL:'To',xPdf:'📄 Export PDF (choose “Save as PDF” in the print window)',xCsv:'📊 Export to Excel (CSV)',xJson:'💾 Save backup file (JSON)',xImp:'📥 Import (CSV or JSON)',xClose:'Close',fromTs:'From timesheet',expDone:'Exported ',impBad:'Could not read this file. Use an exported CSV or JSON.',impNone:'Nothing new to import.',impAsk:'Import {n} entries (skipping {d} duplicates, {b} invalid)? ',impDone:'Imported {n} entries.',noRange:'Choose a date range.',ttl:'Schedule',sub:'Weekends and NZ public holidays are red · confirmed quotes are pushed to the assigned workers',today:'Today',add:'+ Add entry',grid:'Month',list:'List',langBtn:'中文',
   dow:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   allEmp:'All employees',pool:'To schedule',poolHint:'The quote is confirmed but states no work time. Pick your own date and time.',
   schedule:'Schedule',again:'Schedule again',done:'scheduled',other:'Staff schedule',weekend:'Weekend',holiday:'Public holiday',mine:'My schedule',
@@ -272,14 +313,15 @@ function netMsg(e){if(e instanceof TypeError)return t('offline');if(/ye_sched|re
 function say(s,bad){var m=$('msg');m.textContent=s||'';m.className='msg'+(bad?' bad':'')}
 
 /* ---------- state ---------- */
-var mode=lsGet('ye_sched_mode')==='list'?'list':'grid';
+var mode=(function(){var m=lsGet('ye_sched_mode');return m==='list'||m==='week'?m:'grid'})();
 function nzToday(){try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Pacific/Auckland'}).format(new Date())}catch(e){var n=new Date();return iso(n.getFullYear(),n.getMonth(),n.getDate())}}
 var TODAY=nzToday(),vy=+TODAY.slice(0,4),vm=+TODAY.slice(5,7)-1,sel=TODAY;
+var wk=mondayOf(sel);
 var jobs=[],entries=[],jobEntries=[],staff=[],editing=null,editDef=null;
 
 function gridRange(){var first=dow(vy,vm,1);return{s:iso(vy,vm,1-first),e:iso(vy,vm,1-first+41)}}
 async function loadEntries(){
-  var r=gridRange();
+  var r=curRange();
   entries=await sb('/rest/v1/ye_sched_entries?select=*&work_date=lte.'+r.e+'&end_date=gte.'+r.s+'&order=work_date.asc,start_time.asc&limit=2000')||[]}
 async function loadJobs(){
   jobs=await sb('/rest/v1/ye_sched_jobs?select=*&order=start_date.asc.nullsfirst&limit=1000')||[];
@@ -308,22 +350,22 @@ function itemsOn(date){
   return out}
 function pool(){return jobs.filter(function(j){return !j.start_date})}
 function lineHtml(it){return'<div class="l">📍 <b>'+esc(it.address||t('noAddr'))+'</b> · 🏗 '+esc(it.project||t('noProj'))+' · 🕐 '+esc(timeStr(it.st,it.en))+'</div>'}
-function chipText(it){return(it.st?it.st+' ':'')+(it.address||it.project||it.work||'')}
+function chipText(it){var who=(isMgr&&it.kind==='entry')?(it.e.owner_name||nameOf(it.e.owner_email)).split(' ')[0]+': ':'';return who+(it.st?it.st+' ':'')+(it.address||it.project||it.work||'')}
 function workersOf(j){var a=(j.assignees||[]).map(nameOf).concat((j.casuals||[]).map(function(c){return c+(lang==='zh'?'（临时）':' (casual)')}));return a.join(', ')}
 
 /* ---------- render ---------- */
 function render(){
   $('ttl').textContent=t('ttl');$('sub').textContent=t('sub');$('today').textContent=t('today');$('add').textContent=t('add');
-  $('vGrid').textContent=t('grid');$('vList').textContent=t('list');$('lang').textContent=t('langBtn');
-  $('vGrid').className=mode==='grid'?'on':'';$('vList').className=mode==='list'?'on':'';
+  $('vGrid').textContent=t('grid');$('vWeek').textContent=t('week');$('vList').textContent=t('list');$('exp').textContent=t('exp');$('lang').textContent=t('langBtn');
+  $('vGrid').className=mode==='grid'?'on':'';$('vWeek').className=mode==='week'?'on':'';$('vList').className=mode==='list'?'on':'';
   document.documentElement.lang=lang==='zh'?'zh-CN':'en';
-  $('mlabel').textContent=lang==='zh'?vy+'年 '+t('months')[vm]:t('months')[vm]+' '+vy;
+  $('mlabel').textContent=periodLabel();
   $('region').innerHTML=REGIONS.map(function(r){return'<option value="'+r[0]+'"'+(r[0]===region?' selected':'')+'>'+esc((lang==='zh'?'地区：':'Region: ')+(lang==='zh'?r[2]:r[1]))+'</option>'}).join('');
   $('legend').innerHTML='<span style="--c:#f8d3d3">'+t('legHol')+'</span><span style="--c:#fdeeee">'+t('legWe')+'</span><span style="--c:#e3ecf9">'+t('legJob')+'</span><span style="--c:#e4f4ec">'+t('legMine')+'</span>';
   renderEmp();renderPool();
-  $('gridWrap').hidden=mode!=='grid';$('listWrap').hidden=mode!=='list';
-  if(mode==='grid')renderGrid();else renderList();
-  renderDay();renderHols()}
+  $('gridWrap').hidden=mode!=='grid';$('weekWrap').hidden=mode!=='week';$('listWrap').hidden=mode!=='list';
+  if(mode==='grid')renderGrid();else if(mode==='week')renderWeek();else renderList();
+  renderDay();renderHols();printHead()}
 function renderEmp(){
   var s=$('emp');if(!isMgr){s.hidden=true;return}
   var cur=s.value,seen={},opts='<option value="">'+esc(t('allEmp'))+'</option>';
@@ -368,8 +410,8 @@ function dayTitle(d){
 function evHtml(it){
   var h='<div class="ev '+it.kind+'">';
   if(it.kind==='job'){var w=workersOf(it.j);h+='<div class="who">'+esc(t('jobTag'))+(it.j.doc_no?' · '+esc(it.j.doc_no):'')+'</div>'+lineHtml(it)+(isMgr?'<div class="w">👷 '+(w?esc(w):esc(t('unassigned')))+'</div>':'')}
-  else{var e=it.e,mine=e.owner_email.toLowerCase()===me,canEdit=isMgr||e.created_by.toLowerCase()===me;
-    h+='<div class="who">'+(isMgr||!mine?esc(e.owner_name||nameOf(e.owner_email)):esc(t('mine')))+(e.created_by.toLowerCase()!==e.owner_email.toLowerCase()?' · '+esc(t('byOffice')):'')+'</div>'+lineHtml(it)+(e.work?'<div class="w">'+esc(e.work)+'</div>':'')
+  else{var e=it.e,mine=e.owner_email.toLowerCase()===me,canEdit=(isMgr||e.created_by.toLowerCase()===me)&&e.source!=='timesheet';
+    h+='<div class="who">'+(isMgr||!mine?esc(e.owner_name||nameOf(e.owner_email)):esc(t('mine')))+(e.created_by.toLowerCase()!==e.owner_email.toLowerCase()?' · '+esc(t('byOffice')):'')+(e.source==='timesheet'?' · ⏱ '+esc(t('fromTs')):'')+'</div>'+lineHtml(it)+(e.work?'<div class="w">'+esc(e.work)+'</div>':'')
       +(canEdit?'<div class="acts"><button type="button" class="sm" data-ee="'+esc(e.id)+'">'+esc(t('edit'))+'</button></div>':'')}
   return h+'</div>'}
 function bindEv(root){Array.prototype.forEach.call(root.querySelectorAll('[data-ee]'),function(b){b.onclick=function(){var e=entries.filter(function(x){return x.id===b.getAttribute('data-ee')})[0];if(e)openForm(e)}})}
@@ -430,16 +472,122 @@ async function delForm(){
   try{await sb('/rest/v1/ye_sched_entries?id=eq.'+encodeURIComponent(editing.id),{method:'DELETE'});closeForm();await Promise.all([loadEntries(),loadJobs()]);render()}
   catch(er){$('fMsg').textContent=t('saveFail')+netMsg(er)}}
 
+/* ---------- week plan, export / import ---------- */
+function mondayOf(d){var y=+d.slice(0,4),m=+d.slice(5,7)-1,dd=+d.slice(8);return iso(y,m,dd-dow(y,m,dd))}
+function addDays(d,n){return iso(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8)+n)}
+function curRange(){return mode==='week'?{s:wk,e:addDays(wk,6)}:gridRange()}
+function shortDate(d){return lang==='zh'?(+d.slice(5,7))+'月'+(+d.slice(8))+'日':(+d.slice(8))+' '+t('months')[+d.slice(5,7)-1].slice(0,3)}
+function periodLabel(){
+  if(mode==='week'){var b=addDays(wk,6);return lang==='zh'?wk.slice(0,4)+'年 '+shortDate(wk)+' – '+shortDate(b):shortDate(wk)+' – '+shortDate(b)+' '+b.slice(0,4)}
+  return lang==='zh'?vy+'年 '+t('months')[vm]:t('months')[vm]+' '+vy}
+function dayLabel(d){var w=dow(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8));return(lang==='zh'?'周'+t('dow')[w]:t('dow')[w])+' '+shortDate(d)}
+function wiHtml(it){
+  var ts=it.e&&it.e.source==='timesheet';
+  return'<div class="wi '+(it.kind==='job'?'job':'')+'"><b>'+esc(it.st?(it.en?it.st+'–'+it.en:it.st):t('tbc'))+(ts?' ⏱':'')+'</b>'
+    +(it.address?'<div>📍 '+esc(it.address)+'</div>':'')+(it.project?'<div>🏗 '+esc(it.project)+'</div>':'')+(it.work?'<div class="ww">'+esc(it.work)+'</div>':'')+'</div>'}
+function renderWeek(){
+  var days=[],i;for(i=0;i<7;i++)days.push(addDays(wk,i));
+  var rows=[],f=$('emp').value;
+  var hasJob=days.some(function(d){return itemsOn(d).some(function(it){return it.kind==='job'})});
+  if(hasJob)rows.push({job:true,n:t('legJob')});
+  if(!isMgr)rows.push({k:me,n:t('mine')});
+  else{var seen={},list=[];
+    entries.forEach(function(e){var k=e.owner_email.toLowerCase();if(f&&k!==f)return;if(!seen[k]){seen[k]=1;list.push({k:k,n:e.owner_name||nameOf(k)})}});
+    if(f&&!seen[f])list.push({k:f,n:nameOf(f)});
+    list.sort(function(a,b){return a.n<b.n?-1:1});rows=rows.concat(list)}
+  if(!rows.length)rows.push({k:'',n:'—'});
+  var h='<div class="wk"><div class="wh corner"></div>';
+  days.forEach(function(d,i){var hn=holOf(d);h+='<div class="wh'+(i>=5||hn?' red':'')+(d===TODAY?' tdy':'')+'" data-d="'+d+'">'+esc(dayLabel(d))+(hn?'<small>'+esc(hn)+'</small>':'')+'</div>'});
+  rows.forEach(function(r){
+    h+='<div class="wl">'+(r.job?'🏗 ':'👷 ')+esc(r.n)+'</div>';
+    days.forEach(function(d,i){
+      var its=itemsOn(d).filter(function(it){return r.job?it.kind==='job':(it.kind==='entry'&&it.e.owner_email.toLowerCase()===r.k)}),hn=holOf(d);
+      h+='<div class="wc'+(i>=5?' we':'')+(hn?' hol':'')+(its.length?'':' e')+'" data-day="'+esc(dayLabel(d)+(hn?' · '+hn:''))+'">'+its.map(wiHtml).join('')+'</div>'})});
+  h+='</div>';
+  $('weekWrap').innerHTML=h;
+  Array.prototype.forEach.call($('weekWrap').querySelectorAll('.wh[data-d]'),function(c){c.onclick=function(){sel=c.getAttribute('data-d');renderDay();var el=$('day');if(el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'nearest'})}})}
+function printHead(){
+  var f=$('emp').value,who=isMgr&&f?' · '+nameOf(f):(isMgr?' · '+t('allEmp'):' · '+(myName||me));
+  var rn='';REGIONS.forEach(function(r){if(r[0]===region)rn=lang==='zh'?r[2]:r[1]});
+  $('phead').innerHTML='<img src="../assets/logo.png" alt="YE Construction"><div><b>'+esc(t('ttl'))+' · '+esc(periodLabel())+'</b><br>'+esc(who.slice(3))+' · '+esc(rn)+'</div>'}
+
+function xmsg(s,bad){var m=$('xMsg');m.textContent=s||'';m.className='msg'+(bad?' bad':'')}
+function openExp(){
+  var r=curRange(),first=mode==='week'?r.s:iso(vy,vm,1),last=mode==='week'?r.e:iso(vy,vm+1,0);
+  ['xT','xHint','xFL','xTL','xPdf','xCsv','xJson','xImp','xClose'].forEach(function(k){$(k).textContent=t(k)});
+  $('xFrom').value=first;$('xTo').value=last;xmsg('');$('xmodal').hidden=false}
+function doPdf(){
+  $('xmodal').hidden=true;var old=document.title;
+  document.title='YE-Schedule-'+periodLabel().replace(/[^\w一-鿿]+/g,'-');
+  window.addEventListener('afterprint',function once(){document.title=old;window.removeEventListener('afterprint',once)});
+  setTimeout(function(){window.print()},120)}
+async function fetchRange(s,e,all){
+  var a=await sb('/rest/v1/ye_sched_entries?select=*&work_date=lte.'+e+'&end_date=gte.'+s+'&order=work_date.asc,start_time.asc&limit=5000')||[];
+  var f=$('emp').value;if(!all&&isMgr&&f)a=a.filter(function(x){return x.owner_email.toLowerCase()===f});return a}
+var COLS=['employee_email','employee_name','date','end_date','start_time','end_time','address','project','work'];
+function outRows(a){return a.map(function(e){return{employee_email:e.owner_email,employee_name:e.owner_name,date:e.work_date,end_date:e.end_date,start_time:e.start_time,end_time:e.end_time,address:e.address,project:e.project,work:e.work}})}
+function csvCell(v){v=String(v==null?'':v);return/[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function csvParse(txt){
+  var rows=[],row=[],cur='',q=false,i,c;
+  for(i=0;i<txt.length;i++){c=txt[i];
+    if(q){if(c==='"'){if(txt[i+1]==='"'){cur+='"';i++}else q=false}else cur+=c}
+    else if(c==='"')q=true;else if(c===','){row.push(cur);cur=''}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&txt[i+1]==='\n')i++;row.push(cur);cur='';if(row.some(function(x){return x!==''}))rows.push(row);row=[]}
+    else cur+=c}
+  row.push(cur);if(row.some(function(x){return x!==''}))rows.push(row);
+  if(!rows.length)return[];
+  var head=rows[0].map(function(x){return x.trim().toLowerCase()});
+  return rows.slice(1).map(function(r){var o={};head.forEach(function(h,k){o[h]=(r[k]||'').trim()});return o})}
+function download(name,text,type){var b=new Blob([text],{type:type}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},800)}
+async function doExport(kind){
+  var s=$('xFrom').value,e=$('xTo').value;if(!s||!e||e<s){xmsg(t('noRange'),true);return}
+  xmsg(t('loading'));
+  try{var rows=outRows(await fetchRange(s,e,false)),nm='YE-Schedule-'+s+'_'+e;
+    if(kind==='csv')download(nm+'.csv','﻿'+COLS.join(',')+'\r\n'+rows.map(function(r){return COLS.map(function(c){return csvCell(r[c])}).join(',')}).join('\r\n'),'text/csv;charset=utf-8');
+    else download(nm+'.json',JSON.stringify({app:'YE-Schedule',version:1,exported:new Date().toISOString(),from:s,to:e,entries:rows},null,1),'application/json');
+    xmsg(t('expDone')+rows.length)}
+  catch(er){xmsg(netMsg(er),true)}}
+function normDate(v){
+  v=String(v||'').trim();if(/^\d{4}-\d{2}-\d{2}$/.test(v))return v;
+  var m=/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})$/.exec(v);if(!m)return'';
+  var y=+m[3];if(y<100)y+=2000;return iso(y,+m[2]-1,+m[1])}
+function normTime(v){var m=/^(\d{1,2}):(\d{2})/.exec(String(v||'').trim());return m&&+m[1]<24&&+m[2]<60?p2(+m[1])+':'+m[2]:''}
+async function doImport(file){
+  xmsg(t('loading'));
+  try{
+    var txt=(await file.text()).replace(/^﻿/,''),src;
+    try{if(/^\s*[\[{]/.test(txt)){var j=JSON.parse(txt);src=Array.isArray(j)?j:(j.entries||[])}else src=csvParse(txt)}catch(e){xmsg(t('impBad'),true);return}
+    if(!Array.isArray(src)||!src.length){xmsg(t('impNone'),true);return}
+    var out=[],bad=0;
+    src.forEach(function(r){
+      var d=normDate(r.date||r.work_date),e=normDate(r.end_date)||d;if(!d||e<d){bad++;return}
+      var owner=isMgr?String(r.employee_email||r.owner_email||'').trim().toLowerCase()||me:me;
+      out.push({owner_email:owner,owner_name:owner===me?myName:(r.employee_name||r.owner_name||nameOf(owner)),created_by:me,work_date:d,end_date:e,
+        start_time:normTime(r.start_time),end_time:normTime(r.end_time),address:String(r.address||'').trim(),project:String(r.project||'').trim(),work:String(r.work||'').trim(),source:'import'})});
+    if(!out.length){xmsg(t('impNone'),true);return}
+    var lo=out.reduce(function(a,x){return x.work_date<a?x.work_date:a},out[0].work_date),hi=out.reduce(function(a,x){return x.end_date>a?x.end_date:a},out[0].end_date);
+    var key=function(x){return[x.owner_email.toLowerCase(),x.work_date,x.end_date,x.start_time,x.end_time,x.address.toLowerCase(),x.project.toLowerCase(),x.work.toLowerCase()].join('|')};
+    var have={};(await fetchRange(lo,hi,true)).forEach(function(x){have[key({owner_email:x.owner_email,work_date:x.work_date,end_date:x.end_date,start_time:x.start_time,end_time:x.end_time,address:x.address,project:x.project,work:x.work})]=1});
+    var fresh=out.filter(function(x){var k=key(x);if(have[k])return false;have[k]=1;return true}),dup=out.length-fresh.length;
+    if(!fresh.length){xmsg(t('impNone'),true);return}
+    if(!confirm(t('impAsk').replace('{n}',fresh.length).replace('{d}',dup).replace('{b}',bad))){xmsg('');return}
+    for(var i=0;i<fresh.length;i+=100)await sb('/rest/v1/ye_sched_entries',{method:'POST',body:JSON.stringify(fresh.slice(i,i+100)),prefer:'return=minimal'});
+    xmsg(t('impDone').replace('{n}',fresh.length));await reload()
+  }catch(er){xmsg(t('saveFail')+netMsg(er),true)}}
+
 /* ---------- wiring ---------- */
-function shift(n){vm+=n;if(vm<0){vm=11;vy--}if(vm>11){vm=0;vy++}reload()}
+function shift(n){if(mode==='week'){wk=addDays(wk,7*n);var mid=addDays(wk,3);vy=+mid.slice(0,4);vm=+mid.slice(5,7)-1;if(sel<wk||sel>addDays(wk,6))sel=wk}else{vm+=n;if(vm<0){vm=11;vy--}if(vm>11){vm=0;vy++}}reload()}
 async function reload(){try{await loadEntries()}catch(e){say(t('loadFail')+netMsg(e),true)}render()}
 $('prev').onclick=function(){shift(-1)};$('next').onclick=function(){shift(1)};
-$('today').onclick=function(){vy=+TODAY.slice(0,4);vm=+TODAY.slice(5,7)-1;sel=TODAY;reload()};
+$('today').onclick=function(){vy=+TODAY.slice(0,4);vm=+TODAY.slice(5,7)-1;sel=TODAY;wk=mondayOf(TODAY);reload()};
 $('add').onclick=function(){openForm(null)};
-$('vGrid').onclick=function(){mode='grid';lsSet('ye_sched_mode',mode);render()};$('vList').onclick=function(){mode='list';lsSet('ye_sched_mode',mode);render()};
+function setMode(m){mode=m;lsSet('ye_sched_mode',mode);if(m==='week'){wk=mondayOf(sel);var mid=addDays(wk,3);vy=+mid.slice(0,4);vm=+mid.slice(5,7)-1}reload()}
+$('vGrid').onclick=function(){setMode('grid')};$('vWeek').onclick=function(){setMode('week')};$('vList').onclick=function(){setMode('list')};
 $('lang').onclick=function(){lang=lang==='zh'?'en':'zh';lsSet('ye_sched_lang',lang);render()};
 $('region').onchange=function(){region=$('region').value;lsSet('ye_sched_region',region);render()};
 $('emp').onchange=render;
+$('exp').onclick=openExp;$('xClose').onclick=function(){$('xmodal').hidden=true};$('xPdf').onclick=doPdf;$('xCsv').onclick=function(){doExport('csv')};$('xJson').onclick=function(){doExport('json')};$('xImp').onclick=function(){$('xFile').click()};$('xFile').onchange=function(){if(this.files[0])doImport(this.files[0]);this.value=''};
+$('xmodal').addEventListener('mousedown',function(e){if(e.target===$('xmodal'))$('xmodal').hidden=true});
 $('form').onsubmit=saveForm;$('fCancel').onclick=closeForm;$('fDel').onclick=delForm;
 $('modal').addEventListener('mousedown',function(e){if(e.target===$('modal'))closeForm()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('modal').hidden)closeForm()});
