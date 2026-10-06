@@ -683,14 +683,20 @@ function summary(d){let h=0;[...shiftList.children].forEach(c=>h+=Number(c.datas
 /* Schedule link: every shift on this timesheet shows on the worker's Schedule (address, start-finish time).
    Rows are replaced each time the draft is saved, so edits and removed shifts follow. */
 let schedJobs=null;
-const normA=s=>String(s||'').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g,'');
+/* whole words must match ("12 Smith St" is not "112 Smith St"); an exact address wins. Same rule as assets/sched-lib.js matchJob. */
+const aToks=s=>String(s||'').toLowerCase().split(/[^a-z0-9\u4e00-\u9fff]+/).filter(Boolean);
+const aWithin=(x,y)=>{if(x.length<2||x.length>y.length)return false;for(let i=0;i+x.length<=y.length;i++){let k=0;while(k<x.length&&x[k]===y[i+k])k++;if(k===x.length)return true}return false};
+function matchJob(jobs,loc){const a=aToks(loc),na=a.join('');let best=null,bs=0;if(na.length<6)return null;
+  jobs.forEach(j=>{const b=aToks(j.address),nb=b.join('');let sc=0;if(nb.length<6)return;
+    if(na===nb)sc=3;else if(aWithin(a,b)||aWithin(b,a))sc=2;else if(/[\u4e00-\u9fff]/.test(na+nb)&&(na.includes(nb)||nb.includes(na)))sc=1;
+    if(sc>bs){bs=sc;best=j}});return best}
 async function schedFromTs(d,id){
   if(!ts.ses||!id||!ts.ses.email)return;
   const me=ts.ses.email.toLowerCase(),name=str(d.f.employeeName).trim()||me.split('@')[0];
   if(schedJobs===null){try{schedJobs=await tsFetch('/rest/v1/ye_sched_jobs?select=job_id,project,address&limit=500')||[]}catch(e){schedJobs=[]}}
   const rows=[];
   d.shifts.forEach(s=>{const date=str(s[0]);if(!/^\d{4}-\d\d-\d\d$/.test(date))return;
-    const loc=str(s[4]).trim(),na=normA(loc),job=na.length>=6?schedJobs.find(j=>{const a=normA(j.address);return a.length>=6&&(a.includes(na)||na.includes(a))}):null,cow=str(s[5]).trim();
+    const loc=str(s[4]).trim(),job=matchJob(schedJobs,loc),cow=str(s[5]).trim();
     rows.push({owner_email:me,owner_name:name,created_by:me,work_date:date,end_date:date,start_time:str(s[1]),end_time:str(s[2]),address:loc,project:job?(job.project||''):'',work:'Timesheet 工时表'+(cow?' · '+cow:''),job_id:job?job.job_id:null,source:'timesheet',ts_id:String(id)})});
   await tsFetch('/rest/v1/ye_sched_entries?ts_id=eq.'+id+'&source=eq.timesheet',{method:'DELETE'});
   if(rows.length)await tsFetch('/rest/v1/ye_sched_entries',{method:'POST',body:JSON.stringify(rows),prefer:'return=representation'})}
