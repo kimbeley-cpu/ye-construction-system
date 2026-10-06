@@ -672,7 +672,7 @@ async function tsFetch(path,opt,retried){
   if(opt.body)h['Content-Type']='application/json';if(opt.prefer)h.Prefer=opt.prefer;
   const r=await fetch(TS_URL+path,{method:opt.method||'GET',headers:h,body:opt.body,cache:'no-store'});
   if(r.status===401&&!retried){await tsRefresh(true);return tsFetch(path,opt,true)}
-  if(!r.ok)throw await tsErr(r);return r.status===204?null:r.json()}
+  if(!r.ok)throw await tsErr(r);const tx=await r.text();return tx?JSON.parse(tx):null}
 const netMsg=e=>(e instanceof TypeError)?'Can’t reach the office server. Check your connection.':e.message;
 const canUse=()=>ts.ses&&(ts.role==='staff'||ts.role==='manager');
 function hasContent(){const d=collect(false);return !!(str(d.f.employeeName).trim()||d.shifts.some(s=>s[0]||s[1]||s[4])||d.exp.some(x=>x.desc||x.amt)||ev.length||sig)}

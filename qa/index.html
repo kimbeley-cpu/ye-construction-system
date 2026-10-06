@@ -962,7 +962,7 @@ async function tsFetch(path,opt,retried){
   if(opt.body)h['Content-Type']='application/json';if(opt.prefer)h.Prefer=opt.prefer;
   const r=await fetch(TS_URL+path,{method:opt.method||'GET',headers:h,body:opt.body,cache:'no-store'});
   if(r.status===401&&!retried){await tsRefresh(true);return tsFetch(path,opt,true)}
-  if(!r.ok)throw await tsErr(r);return r.status===204?null:r.json()}
+  if(!r.ok)throw await tsErr(r);const tx=await r.text();return tx?JSON.parse(tx):null}
 const netMsg=e=>(e instanceof TypeError)?'Can’t reach the office server. Check your connection.':e.message;
 const canUse=()=>ts.ses&&(ts.role==='staff'||ts.role==='manager');
 function hasContent(){return !!(el('room').value.trim()||Object.keys(ans).length||photos.length||sig||el('notes').value.trim())}
