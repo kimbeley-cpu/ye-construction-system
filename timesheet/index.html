@@ -147,29 +147,77 @@ input[type=date].empty::before,input[type=time].empty::before{content:attr(data-
 .actions .btn-clear{grid-column:1/-1;order:4;min-height:40px;margin:0}
 }
 
+@page{size:A4;margin:10mm}
 @media print{
-body{background:#fff}
+/* Layout of the PDF: page 1 = work time, page 2 = expenses + signature + approval, last page(s) = photos.
+   Phones print on a narrow page, so every grid is set here explicitly instead of inheriting the phone layout. */
+html,body{background:#fff}
+body{font-size:11px;line-height:1.3}
 .wrap{max-width:none;padding:0}
-.card{border:0;border-radius:0;box-shadow:none}
-.no-print,.btn,.upload,.sig-overlay,.sig-hint,.sig-actions,.thumb-x,.warn-hide{display:none!important}
-.section{padding:14px 4px}
+.card{border:0;border-radius:0;box-shadow:none;overflow:visible}
+.no-print,.btn,.upload,.sig-overlay,.sig-hint,.sig-actions,.sig-msg,.thumb-x,.thumbs,.rcpt-img,.warn-hide{display:none!important}
+.print-only{display:block}
+.head{display:flex;align-items:center;gap:12px;padding:0 0 6px;text-align:left;border-bottom:1.5px solid var(--deep)}
+.logo{width:150px;margin:0}
+.head h1{font-size:16px}
+.head p{margin:1px 0 0;font-size:10px}
+.section{padding:8px 0;border-bottom:0}
+.section>h2{gap:6px;margin:0 0 6px;font-size:13px;break-after:avoid}
+.section>h2 small{font-size:10px}
+.section>h2+.note{display:none}
+.badge{width:18px;height:18px;border-radius:5px;font-size:11px}
+.note{font-size:9.5px;line-height:1.35}
 .identity{background:none}
-.item{break-inside:avoid}
-.section>h2{break-after:avoid}
-.sign,.approval{break-inside:avoid}
-input,select,textarea{min-height:40px;border-color:#c9d2de}
+.identity .grid{grid-template-columns:2fr 1fr 1fr;gap:6px 8px}
+.identity .full{grid-column:auto}
+.name input{font-size:12px}
+.grid{gap:6px 8px}
+label,.label{margin:0 0 2px;font-size:9px;font-weight:650;color:var(--muted)}
+.req{display:none}
+input,select,textarea{min-height:22px;padding:2px 6px;border:1px solid #c9d2de;border-radius:4px;font-size:11px;line-height:1.3}
+select{-webkit-appearance:none;appearance:none}
+textarea{min-height:22px;resize:none}
 input::placeholder,textarea::placeholder{color:transparent}
 input.empty{color:transparent}
+input.empty::before{content:none!important}
+.item{margin:0 0 5px;padding:5px 7px;border-radius:6px;background:none;break-inside:avoid}
+.item-head{min-height:0;margin-bottom:3px}
+.item-title{font-size:11px}
+.shift-grid{grid-template-columns:1.3fr 1fr 1fr 1fr 1fr;gap:4px 6px}
+.f-date,.f-start,.f-end,.f-break,.f-hrs{grid-column:auto}
+.f-loc,.f-cow{grid-column:1/-1}
+.f-date{order:1}.f-start{order:2}.f-end{order:3}.f-break{order:4}.f-hrs{order:5}.f-loc{order:6}.f-cow{order:7}
+.f-cow.blank{display:none}
+.hours{min-height:22px;padding:0 6px;border-radius:4px;font-size:11px}
+.warn{margin-top:2px;font-size:9px}
+.totals{margin-top:5px;padding:5px 9px;border-radius:6px}
+.totals span,.totals.one span{font-size:10px}
+.totals strong{font-size:13px}
+.exp-grid{grid-template-columns:2.4fr 1fr 1fr 1.4fr;gap:4px 6px}
+.exp-desc,.exp-cat{grid-column:auto}
+.exp-foot{margin-top:3px;gap:4px}
+.rcpt-name{font-size:9.5px}
+/* page 2 starts with the expenses */
+.sec-exp{break-before:page;page-break-before:always}
+.sec-ev>.note{margin-top:0!important}
+.check{gap:7px;padding:6px 8px;border-width:1px;border-radius:6px;font-size:10px;line-height:1.35}
+.check input{width:13px;height:13px}
+.sign,.approval{break-inside:avoid}
+.sign-grid{grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:6px 8px;margin-top:6px}
+.sig-wrap{height:70px;border-width:1px;border-radius:6px}
+.sig-wrap::after{left:8px;right:8px;bottom:14px}
 .badge,.hours,.totals,.check{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .watermarks img{opacity:.05;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.rcpt-img{max-height:90px}
-.thumb img{height:90px}
-.print-only{display:block}
-.attachments{break-before:page}
-.att{margin:0 0 16px;break-inside:avoid}
-.att figcaption{margin:0 0 6px;font-size:13px;font-weight:650;color:var(--ink)}
-.att img{display:block;max-width:100%;max-height:225mm;border:1px solid #c9d2de;border-radius:6px}
-.att p{margin:0;font-size:13px;color:var(--muted)}
+/* photos: receipts and job photos together on their own page, as a grid */
+.attachments{break-before:page;page-break-before:always}
+#attList{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;align-items:start}
+#attList.n1{grid-template-columns:1fr}
+#attList.n9{grid-template-columns:1fr 1fr 1fr}
+.att{margin:0;break-inside:avoid}
+.att figcaption{margin:0 0 2px;font-size:9.5px;font-weight:650;color:var(--ink)}
+.att img{display:block;max-width:100%;max-height:76mm;border:1px solid #c9d2de;border-radius:4px}
+#attList.n1 .att img{max-height:118mm}
+.att p{margin:0;font-size:9.5px;color:var(--muted)}
 }
 .cloudbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--rule);border-radius:14px;padding:12px 16px;margin-bottom:14px;font-size:14px;line-height:1.45}
 .cloudbar .cb-actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -244,15 +292,16 @@ input.empty{color:transparent}
 </div>
 </section>
 
-<section class="section"><h2><span class="badge">2</span>Expense Reimbursement</h2>
+<section class="section sec-exp"><h2><span class="badge">2</span>Expense Reimbursement</h2>
 <div id="expenses"></div>
 <button type="button" class="btn btn-add" id="addExpenseBtn">+ Add Expense Item</button>
 <div class="totals one"><span>Total Reimbursement</span><strong id="expenseTotal">NZ$0.00</strong></div>
 </section>
 
-<section class="section"><h2><span class="badge">3</span>Job Evidence</h2>
+<section class="section sec-ev"><h2><span class="badge">3</span>Job Evidence</h2>
 <label class="upload"><span class="cam" aria-hidden="true">📷</span><strong>Company Use / Job Evidence</strong><span class="hint">Add photos showing why each item was needed for company work.</span><span class="btn btn-primary" id="evBtn">Take / Upload Photos</span><input type="file" id="evInput" accept="image/*" multiple hidden></label>
 <div id="evThumbs" class="thumbs"></div>
+<p class="note print-only" id="evPrint"></p>
 <p class="note" style="margin-top:12px">Every expense item needs its own receipt, attached on that item above. Claims without a valid receipt and job evidence may not be reimbursed.</p>
 </section>
 
@@ -287,7 +336,7 @@ input.empty{color:transparent}
 </div>
 </section>
 
-<section class="section attachments print-only" id="attachments" hidden><h2>Attachments</h2><p class="note">Receipts and job photos at full size. Zoom in on the PDF to read the details.</p><div id="attList"></div></section>
+<section class="section attachments print-only" id="attachments" hidden><h2>Photos: Receipts &amp; Job Evidence</h2><p class="note">Zoom in on the PDF to read the details.</p><div id="attList"></div></section>
 
 <section class="section no-print">
 <div class="actions">
@@ -481,7 +530,12 @@ function buildAttachments(){
     add('Expense '+(i+1)+' receipt'+(desc?': '+desc:'')+(amt?' (NZ$'+amt.toFixed(2)+')':''),d._rc.data,d._rc.name);
   });
   ev.forEach((x,i)=>add('Job evidence photo '+(i+1),x.data,x.name));
-  $('attachments').hidden=!list.children.length;
+  const n=list.children.length;
+  $('attachments').hidden=!n;
+  list.className=n<=2?'n1':n>6?'n9':'';
+  $('evPrint').textContent=ev.length?ev.length+' job photo'+(ev.length>1?'s':'')+' attached. See the photos page.':'No job photos attached.';
+  /* an empty coworkers box is left out of the PDF */
+  [...shiftList.children].forEach(c=>{const t=c.querySelector('[name="shiftCoworkers[]"]');if(t)t.closest('.f-cow').classList.toggle('blank',!t.value.trim())});
 }
 window.addEventListener('beforeprint',buildAttachments);
 
