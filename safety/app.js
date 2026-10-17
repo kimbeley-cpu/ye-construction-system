@@ -73,11 +73,13 @@ async function openRecord(id){
   const a=await sb(REC+'?id=eq.'+encodeURIComponent(id)+'&select=id,user_id,email,revision,data');
   const r=a&&a[0];if(!r)throw new Error(tr('loadRecFailed'));
   const lang=state.lang;rec=r;state=Object.assign(fresh(),r.data||{},{id:r.id,lang,revision:r.revision,signatures:[]});
-  const ld=draftMap()[r.id];if(ld&&ld.revision===r.revision&&ld.data){state=Object.assign(state,ld.data,{id:r.id,lang,revision:r.revision,signatures:[]});dirty=true;}
+  canEdit=role==='manager'||(ses&&r.user_id===ses.uid);dirty=false;
+  await loadSignatures();
+  let ld=!locked?draftMap()[r.id]:null;
+  if(ld&&ld.revision===r.revision&&ld.data){state=Object.assign(state,ld.data,{id:r.id,lang,revision:r.revision,signatures:state.signatures});dirty=true}
+  else if(locked)dropDraft(r.id);
   state.edits=state.edits||{zh:{},en:{}};state.edits.zh=state.edits.zh||{};state.edits.en=state.edits.en||{};
   ['tasks','ppe','checks','extra'].forEach(k=>{if(!Array.isArray(state[k]))state[k]=[];});state.ratings=state.ratings||{};state.fields=state.fields||{};
-  canEdit=role==='manager'||(ses&&r.user_id===ses.uid);if(!ld)dirty=false;
-  await loadSignatures();
   showView('edit');render();setSave(ld?(state.lang==='zh'?'已恢复这台设备上未上传的草稿，正在继续自动保存…':'Recovered an unsynced draft from this device; autosave will continue…'):tr('saved'));if(ld&&canEdit&&!locked){clearTimeout(saveTimer);saveTimer=setTimeout(push,300)}
   history.replaceState(null,'',location.pathname+'?r='+encodeURIComponent(r.id)+'&lang='+state.lang);
   clearInterval(pollTimer);pollTimer=setInterval(poll,20000);
