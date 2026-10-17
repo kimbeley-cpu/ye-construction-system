@@ -344,7 +344,7 @@ var mode=(function(){var m=lsGet('ye_sched_mode');return m==='list'||m==='week'?
 function nzToday(){try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Pacific/Auckland'}).format(new Date())}catch(e){var n=new Date();return iso(n.getFullYear(),n.getMonth(),n.getDate())}}
 var TODAY=nzToday(),vy=+TODAY.slice(0,4),vm=+TODAY.slice(5,7)-1,sel=TODAY;
 var wk=mondayOf(sel),note='',noteOk=true,noteTimer=0,notePend=null;
-var jobs=[],entries=[],jobEntries=[],staff=[],editing=null,editDef=null;
+var jobs=[],entries=[],jobEntries=[],staff=[],editing=null,editDef=null,FORM_DRAFT='ye_sched_form_draft';
 
 function gridRange(){var first=dow(vy,vm,1);return{s:iso(vy,vm,1-first),e:iso(vy,vm,1-first+41)}}
 async function loadEntries(){
@@ -485,6 +485,9 @@ function renderList(){
 function jobDefaults(id,date){
   var j=jobs.filter(function(x){return x.job_id===id})[0];if(!j)return{};
   return{work_date:j.start_date||date,end_date:j.end_date||j.start_date||date,start_time:j.start_time,end_time:j.end_time,address:j.address,project:j.project,work:'',job_id:j.job_id,owner:(j.assignees||[])[0]||'',jobName:(j.doc_no?j.doc_no+' · ':'')+(j.project||j.address||'')}}
+function formDraft(){return{editingId:editing&&editing.id||null,def:editDef||null,owner:isMgr?$('fEmp').value:'',work_date:$('fD').value,end_date:$('fE').value,start_time:$('fS').value,end_time:$('fT2').value,address:$('fA').value,project:$('fP').value,work:$('fW').value,saved:Date.now()}}
+function stashForm(){if($('modal').hidden)return;lsSet(FORM_DRAFT,formDraft())}
+function clearFormDraft(){lsSet(FORM_DRAFT,null)}
 function openForm(e,def){
   editing=e;var d=e||def||{work_date:sel,end_date:sel};editDef=d;
   $('fT').textContent=t(e?'editT':'newT');
@@ -499,7 +502,7 @@ function openForm(e,def){
     opt(me,myName||me);staff.forEach(function(x){opt(x.email,x.name)});if(e)opt(e.owner_email,whoOf(e));if(d.owner)opt(d.owner,nameOf(d.owner));
     s.innerHTML=o;s.value=e?e.owner_email.toLowerCase():(d.owner||$('emp').value||me)}
   syncDates();$('modal').hidden=false;$('fD').focus()}
-function closeForm(){$('modal').hidden=true}
+function closeForm(){$('modal').hidden=true;clearFormDraft()}
 async function saveForm(ev){
   ev.preventDefault();var fm=$('fMsg');fm.textContent='';
   var d=$('fD').value,e=$('fE').value||d;
@@ -510,13 +513,13 @@ async function saveForm(ev){
   try{
     if(editing)await sb('/rest/v1/ye_sched_entries?id=eq.'+encodeURIComponent(editing.id),{method:'PATCH',body:JSON.stringify(row),prefer:'return=minimal'});
     else{row.created_by=me;if(editDef&&editDef.job_id)row.job_id=editDef.job_id;await sb('/rest/v1/ye_sched_entries',{method:'POST',body:JSON.stringify(row),prefer:'return=minimal'})}
-    closeForm();sel=d;vy=+d.slice(0,4);vm=+d.slice(5,7)-1;
+    clearFormDraft();closeForm();sel=d;vy=+d.slice(0,4);vm=+d.slice(5,7)-1;
     await Promise.all([loadEntries(),loadJobs()]);render()
   }catch(er){fm.textContent=t('saveFail')+netMsg(er)}
   btn.disabled=false}
 async function delForm(){
   if(!editing||!confirm(t('delQ')))return;
-  try{await sb('/rest/v1/ye_sched_entries?id=eq.'+encodeURIComponent(editing.id),{method:'DELETE'});closeForm();await Promise.all([loadEntries(),loadJobs()]);render()}
+  try{await sb('/rest/v1/ye_sched_entries?id=eq.'+encodeURIComponent(editing.id),{method:'DELETE'});clearFormDraft();closeForm();await Promise.all([loadEntries(),loadJobs()]);render()}
   catch(er){$('fMsg').textContent=t('saveFail')+netMsg(er)}}
 
 /* ---------- week plan, export / import ---------- */
@@ -659,10 +662,11 @@ $('emp').onchange=function(){if(mode==='week')reload();else render()};
 $('exp').onclick=openExp;$('xClose').onclick=function(){$('xmodal').hidden=true};$('xPdf').onclick=doPdf;$('xCsv').onclick=function(){doExport('csv')};$('xJson').onclick=function(){doExport('json')};$('xImp').onclick=function(){$('xFile').click()};$('xFile').onchange=function(){if(this.files[0])doImport(this.files[0]);this.value=''};
 $('xmodal').addEventListener('mousedown',function(e){if(e.target===$('xmodal'))$('xmodal').hidden=true});
 $('form').onsubmit=saveForm;$('fCancel').onclick=closeForm;$('fDel').onclick=delForm;
+$('form').addEventListener('input',stashForm);$('form').addEventListener('change',stashForm);
 $('modal').addEventListener('mousedown',function(e){if(e.target===$('modal'))closeForm()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('modal').hidden)closeForm()});
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flushNote()});
-window.addEventListener('pagehide',flushNote);
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden'){flushNote();stashForm()}});
+window.addEventListener('pagehide',function(){flushNote();stashForm()});
 
 /* office only: make sure every employee's timesheet shifts are on the schedule, even if their phone has not synced them yet */
 function normA(x){return String(x||'').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g,'')}
@@ -700,7 +704,7 @@ async function boot(){
     if(mode==='week')await loadNote();
     if(!failed)say('');
   }catch(e){say(t('loadFail')+netMsg(e),true)}
-  render()}
+  render();var fd=lsGet(FORM_DRAFT);if(fd&&fd.saved&&Date.now()-fd.saved<7*86400000){var ee=fd.editingId?entries.filter(function(x){return x.id===fd.editingId})[0]:null;openForm(ee,fd.def||{work_date:fd.work_date||sel,end_date:fd.end_date||fd.work_date||sel});if(isMgr&&fd.owner)$('fEmp').value=fd.owner;$('fD').value=fd.work_date||$('fD').value;$('fE').value=fd.end_date||'';$('fS').value=fd.start_time||'';$('fT2').value=fd.end_time||'';$('fA').value=fd.address||'';$('fP').value=fd.project||'';$('fW').value=fd.work||'';syncDates();$('fMsg').textContent=lang==='zh'?'已恢复上次未保存的日程草稿。':'Restored your unsaved schedule draft.'}}
 boot();
 window.__sched={holidays:holidays};
 })();
