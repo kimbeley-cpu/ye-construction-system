@@ -18,7 +18,7 @@ const localDate=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Pacific/Auckland'
 function fresh(){return {schema:1,id:crypto.randomUUID(),lang:'zh',revision:1,fields:{date:localDate()},tasks:[],ppe:[],checks:[],edits:{zh:{},en:{}},ratings:{},extra:[],signatures:[]};}
 let state=fresh(),saveFailed=false,strokes=[],currentStroke=null;
 /* records live in Supabase (ye_jsa_records / ye_jsa_signatures); nothing is kept as the single local record any more */
-const SB='https://fkyuhthxfzhqmlikbrfg.supabase.co',SBK='sb_publishable_zbPzA78u7V3htYulP1b9_w_53KQFKHn',REC='/rest/v1/ye_jsa_records',SIG='/rest/v1/ye_jsa_signatures',SESKEY='ye_ts_ses';
+const SB='https://fkyuhthxfzhqmlikbrfg.supabase.co',SBK='sb_publishable_zbPzA78u7V3htYulP1b9_w_53KQFKHn',REC='/rest/v1/ye_jsa_records',SIG='/rest/v1/ye_jsa_signatures',SESKEY='ye_ts_ses',DRAFTKEY='ye_jsa_local_drafts';
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
 function lsSet(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 {const q=new URLSearchParams(location.search).get('lang');state.lang=['zh','en'].includes(q)?q:(['zh','en'].includes(lsGet('ye_safety_lang'))?lsGet('ye_safety_lang'):'zh');}
@@ -44,7 +44,10 @@ async function sb(path,opt,retried){
 const netMsg=e=>e instanceof TypeError?tr('offline'):e.message;
 function snap(s){const o=JSON.parse(JSON.stringify(s));delete o.signatures;delete o.lang;delete o.id;return o;}
 function setSave(t,bad){const s=$('saveStatus');s.textContent=t;s.style.color=bad?'#a92d2d':'';}
-function save(){if(!rec||!canEdit||locked)return;dirty=true;setSave(tr('saving'));clearTimeout(saveTimer);saveTimer=setTimeout(push,1200);}
+function draftMap(){const x=lsGet(DRAFTKEY);return x&&typeof x==='object'?x:{}}
+function stashDraft(){if(!rec||!canEdit||locked)return;const m=draftMap();m[rec.id]={revision:state.revision,saved:Date.now(),data:snap(state)};lsSet(DRAFTKEY,m)}
+function dropDraft(id){const m=draftMap();if(m[id]){delete m[id];lsSet(DRAFTKEY,Object.keys(m).length?m:null)}}
+function save(){if(!rec||!canEdit||locked)return;dirty=true;stashDraft();setSave(tr('saving'));clearTimeout(saveTimer);saveTimer=setTimeout(push,1200);}
 async function push(){
   clearTimeout(saveTimer);if(!rec||!canEdit||locked)return;
   if(pushing){saveTimer=setTimeout(push,800);return;}
@@ -52,7 +55,7 @@ async function push(){
   try{
     const a=await sb(REC+'?id=eq.'+rec.id+'&select=id',{method:'PATCH',body:JSON.stringify(body),prefer:'return=representation'});
     if(!a||!a.length)throw new Error(tr('notSaved'));
-    dirty=false;setSave(tr('saved')+' '+new Date().toLocaleTimeString('en-NZ',{hour:'numeric',minute:'2-digit'}));
+    dirty=false;dropDraft(rec.id);setSave(tr('saved')+' '+new Date().toLocaleTimeString('en-NZ',{hour:'numeric',minute:'2-digit'}));
   }catch(e){
     if(/already has signatures/i.test(e.message)){dirty=false;openRecord(rec.id).then(()=>setSave(tr('lockedNow'),true)).catch(()=>{});}
     else{setSave(netMsg(e)+' '+tr('failed'),true);clearTimeout(saveTimer);saveTimer=setTimeout(push,10000);}
@@ -70,11 +73,12 @@ async function openRecord(id){
   const a=await sb(REC+'?id=eq.'+encodeURIComponent(id)+'&select=id,user_id,email,revision,data');
   const r=a&&a[0];if(!r)throw new Error(tr('loadRecFailed'));
   const lang=state.lang;rec=r;state=Object.assign(fresh(),r.data||{},{id:r.id,lang,revision:r.revision,signatures:[]});
+  const ld=draftMap()[r.id];if(ld&&ld.revision===r.revision&&ld.data){state=Object.assign(state,ld.data,{id:r.id,lang,revision:r.revision,signatures:[]});dirty=true;}
   state.edits=state.edits||{zh:{},en:{}};state.edits.zh=state.edits.zh||{};state.edits.en=state.edits.en||{};
   ['tasks','ppe','checks','extra'].forEach(k=>{if(!Array.isArray(state[k]))state[k]=[];});state.ratings=state.ratings||{};state.fields=state.fields||{};
-  canEdit=role==='manager'||(ses&&r.user_id===ses.uid);dirty=false;
+  canEdit=role==='manager'||(ses&&r.user_id===ses.uid);if(!ld)dirty=false;
   await loadSignatures();
-  showView('edit');render();setSave(tr('saved'));
+  showView('edit');render();setSave(ld?(state.lang==='zh'?'已恢复这台设备上未上传的草稿，正在继续自动保存…':'Recovered an unsynced draft from this device; autosave will continue…'):tr('saved'));if(ld&&canEdit&&!locked){clearTimeout(saveTimer);saveTimer=setTimeout(push,300)}
   history.replaceState(null,'',location.pathname+'?r='+encodeURIComponent(r.id)+'&lang='+state.lang);
   clearInterval(pollTimer);pollTimer=setInterval(poll,20000);
 }
@@ -122,7 +126,8 @@ $('records').addEventListener('click',async e=>{
     try{const a=await sb(REC+'?id=eq.'+d.dataset.del,{method:'DELETE',prefer:'return=representation'});if(!a||!a.length)throw new Error(tr('notSaved'));await loadList();}catch(err){$('listStatus').textContent=tr('loadFailed')+netMsg(err);}
   }
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&dirty)push();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&dirty){stashDraft();push();}});
+window.addEventListener('pagehide',()=>{if(dirty)stashDraft()});
 let reopen=[];
 window.addEventListener('beforeprint',()=>{reopen=[...document.querySelectorAll('details:not([open])')];reopen.forEach(d=>d.open=true);});
 window.addEventListener('afterprint',()=>{reopen.forEach(d=>d.open=false);reopen=[];});
