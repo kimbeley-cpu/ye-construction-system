@@ -898,6 +898,7 @@ async function openRecord(meta,asManager){
     const a=await tsFetch(TS_T+'?select=id,status,data,manager_note&id=eq.'+meta.id),row=a&&a[0];if(!row||!row.data)throw new Error('This record could not be opened.');
     const editable=!asManager&&(row.status==='draft'||row.status==='returned');
     if(editable){
+      if(!ts.view&&ts.cur===row.id){panelClose();tsBar('This draft is already open. Your current unsaved edits are still on screen.');return}
       if(!ts.view&&ts.cur&&ts.cur!==row.id&&hasContent()){clearTimeout(saveTimer);saveTimer=0;saveLocal();clearTimeout(ts.timer);await tsPushDraft()}
       ts.view=null;ts.cur=row.id;lsSet('ye_ts_cur',row.id);ts.note=row.status==='returned'?(row.manager_note||'Please check and submit again.'):'';
       restore(row.data);saveLocal();lock(false);panelClose();viewBar();tsBar('Editing draft from My records. Changes autosave to this document.');window.scrollTo(0,0);return
