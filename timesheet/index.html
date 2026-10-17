@@ -418,7 +418,7 @@ function recalcShifts(){
   $('grandTotalHours').textContent=t.toFixed(2)+' hrs';
 }
 function sortShifts(){
-  const cs=[...shiftList.children];
+  const now=[...shiftList.children],cs=now.slice();
   cs.sort((a,b)=>{
     const ad=a.querySelector('[name="shiftDate[]"]').value||'9999-12-31',bd=b.querySelector('[name="shiftDate[]"]').value||'9999-12-31';
     if(ad!==bd)return ad.localeCompare(bd);
@@ -426,7 +426,9 @@ function sortShifts(){
     if(at!==bt)return at.localeCompare(bt);
     return Number(a.dataset.seq||0)-Number(b.dataset.seq||0);
   });
-  cs.forEach(x=>shiftList.appendChild(x));recalcShifts();
+  /* only move cards when the order really changed: re-inserting a card makes the box being typed in lose focus */
+  if(cs.some((x,i)=>x!==now[i]))cs.forEach(x=>shiftList.appendChild(x));
+  recalcShifts();
 }
 function addShift(v){
   const id='s'+(++seq),c=document.createElement('div');
@@ -899,11 +901,16 @@ async function openRecord(meta,asManager){
     const editable=!asManager&&(row.status==='draft'||row.status==='returned');
     if(editable){
       if(!ts.view&&ts.cur===row.id){panelClose();tsBar('This draft is already open. Your current unsaved edits are still on screen.');return}
-      if(!ts.view&&ts.cur&&ts.cur!==row.id&&hasContent()){clearTimeout(saveTimer);saveTimer=0;saveLocal();clearTimeout(ts.timer);await tsPushDraft()}
+      /* keep the document on screen before switching. A new document has no cloud id yet (ts.cur is empty) until its
+         first autosave, so it must be pushed here too, or it is lost when the other draft replaces it. */
+      if(!ts.view&&ts.cur!==row.id&&hasContent()){clearTimeout(saveTimer);saveTimer=0;saveLocal();clearTimeout(ts.timer);
+        const kept=await tsPushDraft();if(!kept){tsBar('The document on screen could not be saved, so the other draft was not opened. Your work is still on screen.',true);return}}
       ts.view=null;ts.cur=row.id;lsSet('ye_ts_cur',row.id);ts.note=row.status==='returned'?(row.manager_note||'Please check and submit again.'):'';
       restore(row.data);saveLocal();lock(false);panelClose();viewBar();tsBar('Editing draft from My records. Changes autosave to this document.');window.scrollTo(0,0);return
     }
-    if(!ts.view){clearTimeout(saveTimer);saveTimer=0;saveLocal();clearTimeout(ts.timer)}
+    if(!ts.view){clearTimeout(saveTimer);saveTimer=0;saveLocal();clearTimeout(ts.timer);
+      /* save the open draft to My records before showing another record read-only, so nothing waits only on this device */
+      if(hasContent()&&canUse()){const kept=await tsPushDraft();if(!kept){tsBar('The document on screen could not be saved, so the record was not opened. Your work is still on screen.',true);return}}}
     ts.view={id:row.id,status:row.status,manager:ts.role==='manager'&&row.status!=='draft',all:!!asManager,meta};
     restore(row.data);lock(true,ts.view.manager);panelClose();viewBar();window.scrollTo(0,0)}
   catch(e){alert(netMsg(e))}}
