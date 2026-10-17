@@ -340,13 +340,15 @@ input.empty::before{content:none!important}
 
 <section class="section no-print">
 <div class="actions">
-<button type="button" class="btn btn-clear" id="resetBtn">Clear Form</button>
+<button type="button" class="btn btn-primary" id="newDocBtn">＋ New Document</button>
+<button type="button" class="btn btn-soft" id="saveDraftBtn">💾 Save Draft</button>
+<button type="button" class="btn btn-clear" id="resetBtn">Clear / New Blank</button>
 <label class="btn btn-soft load">Load from File<input type="file" id="loadInput" accept=".json,application/json" hidden></label>
 <button type="button" class="btn btn-soft" id="saveFileBtn">Save to File</button>
 <button type="button" class="btn btn-soft" id="printBtn">Print / Save as PDF</button>
 <button type="button" class="btn btn-primary" id="submitBtn">Submit to Office</button>
 </div>
-<p class="note">Your draft saves automatically on this device, and to the office once you are signed in. When the record is finished and signed, press “Submit to Office”. “Save as PDF” in the print window gives you a copy to keep.</p>
+<p class="note">Each document is kept as its own draft. “Save Draft” saves the current document to My records immediately; autosave keeps updating that same draft while you work. “New Document” starts another draft without deleting the current one. When a record is finished and signed, press “Submit to Office”.</p>
 </section>
 </form></div>
 <div class="ovl no-print" id="tsPanel" hidden><div class="ovl-box" id="tsPanelBox"></div></div>
@@ -415,9 +417,20 @@ function recalcShifts(){
   $('totalShifts').textContent=cs.length;
   $('grandTotalHours').textContent=t.toFixed(2)+' hrs';
 }
+function sortShifts(){
+  const cs=[...shiftList.children];
+  cs.sort((a,b)=>{
+    const ad=a.querySelector('[name="shiftDate[]"]').value||'9999-12-31',bd=b.querySelector('[name="shiftDate[]"]').value||'9999-12-31';
+    if(ad!==bd)return ad.localeCompare(bd);
+    const at=a.querySelector('[name="shiftStart[]"]').value||'99:99',bt=b.querySelector('[name="shiftStart[]"]').value||'99:99';
+    if(at!==bt)return at.localeCompare(bt);
+    return Number(a.dataset.seq||0)-Number(b.dataset.seq||0);
+  });
+  cs.forEach(x=>shiftList.appendChild(x));recalcShifts();
+}
 function addShift(v){
   const id='s'+(++seq),c=document.createElement('div');
-  c.className='item';c.dataset.hours='0';
+  c.className='item';c.dataset.hours='0';c.dataset.seq=seq;
   c.innerHTML=`<div class="item-head"><span class="item-title"></span><button type="button" class="btn btn-remove no-print">Remove</button></div>
 <div class="shift-grid">
 <div class="f-date"><label for="${id}d">Date <span class="req">*</span></label><input type="date" id="${id}d" name="shiftDate[]" data-ph="Select date" required></div>
@@ -431,6 +444,7 @@ function addShift(v){
   shiftList.appendChild(c);
   if(v)SK.forEach((k,i)=>{c.querySelector('[name="'+k+'[]"]').value=str(v[i])||(k==='shiftBreak'?'0':'')});
   c.addEventListener('input',()=>calcShift(c));
+  c.addEventListener('change',e=>{if(e.target.name==='shiftDate[]'||e.target.name==='shiftStart[]')sortShifts()});
   twoTap(c.querySelector('.btn-remove'),'Tap again to remove',()=>{c.remove();recalcShifts();sched()});
   calcShift(c);syncEmpty(c);
 }
@@ -624,7 +638,8 @@ $('sigDone').addEventListener('click',doneSign);
 
 /* ---------- save / restore ---------- */
 function collect(withFiles){
-  const o={v:9,saved:Date.now(),f:{},shifts:[],exp:[],ev:withFiles?ev:[],sig:sig};
+  sortShifts();
+  const o={v:10,saved:Date.now(),f:{},shifts:[],exp:[],ev:withFiles?ev:[],sig:sig};
   F.forEach(k=>{const e=el(k);o.f[k]=e.type==='checkbox'?e.checked:e.value});
   [...shiftList.children].forEach(c=>o.shifts.push(SK.map(k=>c.querySelector('[name="'+k+'[]"]').value)));
   [...expList.children].forEach(d=>o.exp.push({
@@ -641,7 +656,7 @@ function restore(o){
   (Array.isArray(o.exp)&&o.exp.length?o.exp:[null]).forEach(x=>addExpense(x&&typeof x==='object'?x:null));
   ev=(Array.isArray(o.ev)?o.ev:[]).filter(x=>x&&isImg(x.data));renderEv();
   sig=o.sig&&isImg(o.sig.data)?{data:o.sig.data,when:Number(o.sig.when)||Date.now()}:null;
-  sigRender();syncEmpty(form);
+  sigRender();syncEmpty(form);sortShifts();
 }
 function saveLocal(){
   const t=new Date().toLocaleTimeString('en-NZ',{hour:'numeric',minute:'2-digit'});
@@ -692,13 +707,23 @@ $('printBtn').addEventListener('click',()=>{
   buildAttachments();
   window.print();
 });
-$('resetBtn').addEventListener('click',()=>{
-  if(!confirm('Clear everything on this form, including the saved draft? This can’t be undone.'))return;
-  clearTimeout(saveTimer);saveTimer=0;
-  if(TEMP){location.reload();return}
+function blankForm(){
+  clearTimeout(saveTimer);saveTimer=0;clearTimeout(ts.timer);ts.view=null;ts.cur=null;ts.note='';lsSet('ye_ts_cur',null);
   try{localStorage.removeItem(KEY)}catch(e){}
-  tsDropDraft().then(()=>location.reload());
-});
+  restore({v:10,f:{},shifts:[],exp:[],ev:[],sig:null});lock(false);viewBar();setStatus('New blank document. Start typing; it will autosave as its own draft.');
+}
+async function newDocument(){
+  if(TEMP){location.reload();return}
+  if(ts.view){ts.view=null;lock(false);viewBar()}
+  if(hasContent()){
+    if(!canUse()){tsBar('Sign in before starting another document so this one can be kept in My records.',true);$('cloudBar').scrollIntoView({block:'center'});return}
+    try{clearTimeout(saveTimer);saveTimer=0;saveLocal();clearTimeout(ts.timer);const row=await tsPushDraft();if(!row)throw new Error('The current draft could not be saved.');}
+    catch(e){tsBar(netMsg(e)+' New document was not opened, so the current work is still on screen.',true);return}
+  }
+  blankForm();tsBar('New document started. The previous draft is still in My records.');
+}
+$('newDocBtn').addEventListener('click',newDocument);
+$('resetBtn').addEventListener('click',()=>{if(confirm('Start a new blank document? The current draft will be kept in My records.'))newDocument()});
 form.addEventListener('submit',e=>e.preventDefault());
 /* A scroll wheel over a focused number box would silently change the value. */
 form.addEventListener('wheel',e=>{if(e.target.type==='number'&&document.activeElement===e.target)e.target.blur()},{passive:true});
@@ -757,7 +782,7 @@ async function schedFromTs(d,id){
 
 /* draft kept in the cloud so it follows the employee to another device */
 function save(){if(TEMP||ts.view)return;saveLocal();tsTouch()}
-function tsTouch(){if(!canUse()||ts.view)return;clearTimeout(ts.timer);ts.timer=setTimeout(()=>tsPushDraft().catch(()=>{}),Math.max(4000,20000-(Date.now()-ts.lastPush)))}
+function tsTouch(){if(!canUse()||ts.view)return;clearTimeout(ts.timer);ts.timer=setTimeout(()=>tsPushDraft().catch(()=>{}),Math.max(2500,8000-(Date.now()-ts.lastPush)))}
 async function tsPushDraft(status){
   if(!canUse()||ts.view)return;if(!status&&!hasContent())return;
   clearTimeout(ts.timer);const d=collect(true),body=Object.assign(summary(d),{data:d});if(status)body.status=status;
@@ -771,14 +796,25 @@ async function tsPushDraft(status){
     if(!status)tsBar('Draft also saved to the office at '+new Date().toLocaleTimeString('en-NZ',{hour:'numeric',minute:'2-digit'}));
     return row}
   catch(e){if(status)throw e;tsBar(netMsg(e)+' Your draft is still saved on this device.',true)}}
+async function saveDraftNow(){
+  if(TEMP)return;
+  if(!ts.ses){panelLogin();return}
+  if(!canUse()){tsBar('This email is not allowed to save records yet.',true);return}
+  const b=$('saveDraftBtn');b.disabled=true;const old=b.textContent;b.textContent='Saving…';
+  try{clearTimeout(saveTimer);saveTimer=0;saveLocal();clearTimeout(ts.timer);const row=await tsPushDraft();if(!row)throw new Error('The draft could not be saved.');
+    setStatus('Saved to My records at '+new Date().toLocaleTimeString('en-NZ',{hour:'numeric',minute:'2-digit'}));tsBar('✔ Current document is saved in My records.');}
+  catch(e){tsBar(netMsg(e),true)}
+  finally{b.disabled=false;b.textContent=old}}
+$('saveDraftBtn').addEventListener('click',saveDraftNow);
 async function tsDropDraft(){if(canUse()&&ts.cur){try{await tsFetch(TS_T+'?id=eq.'+ts.cur+'&status=in.(draft,returned)',{method:'DELETE'});await tsFetch('/rest/v1/ye_sched_entries?ts_id=eq.'+ts.cur+'&source=eq.timesheet',{method:'DELETE'})}catch(e){}}ts.cur=null;lsSet('ye_ts_cur',null)}
 async function tsLoadDraft(){
-  const a=await tsFetch(TS_T+'?select=id,status,manager_note,data&user_id=eq.'+ts.ses.uid+'&status=in.(draft,returned)&order=updated_at.desc&limit=1');
-  const row=a&&a[0],local=lsGet(KEY);
+  const local=lsGet(KEY);let row=null;
+  if(ts.cur){const a=await tsFetch(TS_T+'?select=id,status,manager_note,data&user_id=eq.'+ts.ses.uid+'&id=eq.'+ts.cur+'&status=in.(draft,returned)&limit=1');row=a&&a[0]}
+  if(!row&&!local){const a=await tsFetch(TS_T+'?select=id,status,manager_note,data&user_id=eq.'+ts.ses.uid+'&status=in.(draft,returned)&order=updated_at.desc&limit=1');row=a&&a[0]}
   if(!row){ts.cur=null;lsSet('ye_ts_cur',null);if(hasContent())tsTouch();return}
   ts.cur=row.id;lsSet('ye_ts_cur',row.id);ts.note=row.status==='returned'?(row.manager_note||'Please check and submit again.'):'';
   const cloudNewer=row.data&&(!local||!local.saved||!hasContent()||(row.data.saved||0)>local.saved);
-  if(cloudNewer){restore(row.data);saveLocal();setStatus('Loaded your draft from the office'+(row.data.saved?' (saved '+when(row.data.saved)+')':''))}
+  if(cloudNewer){restore(row.data);saveLocal();setStatus('Loaded your draft from My records'+(row.data.saved?' (saved '+when(row.data.saved)+')':''))}
   else tsTouch()}
 
 /* sign in / out */
@@ -802,7 +838,7 @@ function tsBar(msg,bad){
   else h='<span>Signed in as <strong>'+esc(whoName()||ts.ses.email)+'</strong>'+(ts.role==='manager'?' · manager':'')+'</span><span class="cb-actions">'+(canUse()?'<button type="button" class="btn btn-soft" data-a="mine">My records</button>':'')+(ts.role==='manager'?'<button type="button" class="btn btn-primary" data-a="all">All staff records</button>':'')+'<button type="button" class="btn btn-soft" data-a="out">Sign out</button></span>';
   if(ts.note)h+='<p class="cb-note bad">Returned by the office: '+esc(ts.note)+'</p>';
   if(ts.msg)h+='<p class="cb-note'+(ts.bad?' bad':'')+'">'+esc(ts.msg)+'</p>';
-  b.innerHTML=h;$('submitBtn').hidden=!!ts.view}
+  b.innerHTML=h;$('submitBtn').hidden=!!ts.view;$('saveDraftBtn').hidden=!!ts.view;$('newDocBtn').hidden=!!ts.view}
 $('cloudBar').addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(!a)return;const k=a.dataset.a;
   if(k==='login')panelLogin();else if(k==='out'){if(confirm('Sign out on this device? Your draft stays on this device.'))tsSignOut()}else if(k==='mine')panelList(false);else if(k==='all')panelList(true)});
 
@@ -858,9 +894,14 @@ function lock(on,manager){
     if(x.tagName==='SELECT'||x.type==='checkbox')x.disabled=ro;else x.readOnly=ro})}
 async function openRecord(meta,asManager){
   if(!meta)return;
-  if(!asManager&&(meta.status==='draft'||meta.status==='returned')&&meta.id===ts.cur){panelClose();return}
   try{
     const a=await tsFetch(TS_T+'?select=id,status,data,manager_note&id=eq.'+meta.id),row=a&&a[0];if(!row||!row.data)throw new Error('This record could not be opened.');
+    const editable=!asManager&&(row.status==='draft'||row.status==='returned');
+    if(editable){
+      if(!ts.view&&ts.cur&&ts.cur!==row.id&&hasContent()){clearTimeout(saveTimer);saveTimer=0;saveLocal();clearTimeout(ts.timer);await tsPushDraft()}
+      ts.view=null;ts.cur=row.id;lsSet('ye_ts_cur',row.id);ts.note=row.status==='returned'?(row.manager_note||'Please check and submit again.'):'';
+      restore(row.data);saveLocal();lock(false);panelClose();viewBar();tsBar('Editing draft from My records. Changes autosave to this document.');window.scrollTo(0,0);return
+    }
     if(!ts.view){clearTimeout(saveTimer);saveTimer=0;saveLocal();clearTimeout(ts.timer)}
     ts.view={id:row.id,status:row.status,manager:ts.role==='manager'&&row.status!=='draft',all:!!asManager,meta};
     restore(row.data);lock(true,ts.view.manager);panelClose();viewBar();window.scrollTo(0,0)}
@@ -898,7 +939,7 @@ $('submitBtn').addEventListener('click',async()=>{
   if(!confirm('Send this record to the office?\n\nAfter it is sent you can’t change it. If something is wrong, the office can return it to you.'))return;
   const b=$('submitBtn');b.disabled=true;b.textContent='Sending…';
   try{clearTimeout(saveTimer);saveTimer=0;saveLocal();const row=await tsPushDraft('submitted');if(!row||row.status!=='submitted')throw new Error('The record was not accepted. Try again.');
-    try{localStorage.removeItem(KEY)}catch(e){}lsSet('ye_ts_cur',null);
+    try{localStorage.removeItem(KEY)}catch(e){}lsSet('ye_ts_cur',null);ts.cur=null;
     sessionStorage.setItem('ye_ts_flash','✔ Sent to the office at '+new Date().toLocaleTimeString('en-NZ',{hour:'numeric',minute:'2-digit'})+'. You can see it under “My records”.');location.reload()}
   catch(e){b.disabled=false;b.textContent='Submit to Office';tsBar(netMsg(e)+' Nothing was sent.',true);$('cloudBar').scrollIntoView({block:'center'})}});
 
