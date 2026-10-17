@@ -341,6 +341,7 @@ input.empty::before{content:none!important}
 <section class="section no-print">
 <div class="actions">
 <button type="button" class="btn btn-primary" id="newDocBtn">＋ New Document</button>
+<button type="button" class="btn btn-soft" id="copyDocBtn">⧉ Copy as New</button>
 <button type="button" class="btn btn-soft" id="saveDraftBtn">💾 Save Draft</button>
 <button type="button" class="btn btn-clear" id="resetBtn">Clear / New Blank</button>
 <label class="btn btn-soft load">Load from File<input type="file" id="loadInput" accept=".json,application/json" hidden></label>
@@ -725,6 +726,25 @@ async function newDocument(){
   blankForm();tsBar('New document started. The previous draft is still in My records.');
 }
 $('newDocBtn').addEventListener('click',newDocument);
+/* Copy as New: the details and shifts on screen become a new, separate draft. Expenses, receipts, photos and the
+   signature are left out, so a claim can't be paid twice and nobody's signature lands on a record they didn't sign. */
+async function copyAsNew(){
+  if(TEMP)return;
+  if(!ts.ses){panelLogin();return}
+  if(!canUse()){tsBar('This email is not allowed to save records yet.',true);return}
+  if(!hasContent()){tsBar('There is nothing on screen to copy yet.',true);return}
+  if(!ts.view){
+    try{clearTimeout(saveTimer);saveTimer=0;saveLocal();clearTimeout(ts.timer);const row=await tsPushDraft();if(!row)throw new Error('The current document could not be saved.');}
+    catch(e){tsBar(netMsg(e)+' Nothing was copied, and the current work is still on screen.',true);return}
+  }
+  const d=collect(false);
+  ts.view=null;ts.cur=null;ts.note='';lsSet('ye_ts_cur',null);
+  restore({v:10,f:d.f,shifts:d.shifts,exp:[],ev:[],sig:null});lock(false);viewBar();saveLocal();
+  try{const row=await tsPushDraft();if(!row)throw new Error('The copy is on screen but not yet in My records.');tsBar('✔ Copied as a new draft. The original is unchanged in My records. Expenses, photos and the signature were not copied.')}
+  catch(e){tsBar(netMsg(e)+' It will keep trying to save automatically.',true)}
+  window.scrollTo(0,0);
+}
+$('copyDocBtn').addEventListener('click',copyAsNew);
 $('resetBtn').addEventListener('click',()=>{if(confirm('Start a new blank document? The current draft will be kept in My records.'))newDocument()});
 form.addEventListener('submit',e=>e.preventDefault());
 /* A scroll wheel over a focused number box would silently change the value. */
